@@ -36,9 +36,9 @@
 
 | 계열사 | HEX | 용도 |
 |--------|-----|------|
-| LGES (에너지솔루션) | `#1565C0` | 파란색 텍스트 태그 |
-| LGD (디스플레이) | `#D4760A` | 주황색 텍스트 태그 |
-| LGC (화학) | `#2E7D32` | 초록색 텍스트 태그 |
+| 계열사A | `#1565C0` | 파란색 텍스트 태그 |
+| 계열사B | `#D4760A` | 주황색 텍스트 태그 |
+| 계열사C | `#2E7D32` | 초록색 텍스트 태그 |
 
 ## Typography
 
@@ -93,6 +93,76 @@ def set_korean_font(run, font_name):
     cs.set('typeface', font_name)
     rPr.append(cs)
 ```
+
+---
+
+## Hanwha Theme Design Tokens
+
+### Color Palette (한화 Brand System Design Guide 기반)
+
+#### Primary Colors
+
+| Token | Name | HEX | RGB | 용도 |
+|-------|------|-----|-----|------|
+| `RED` (= ORANGE) | Hanwha Orange | `#F37321` | `(243, 115, 33)` | 브랜드 컬러. 액센트 바, 챕터명, 하단 바, 강조 |
+| `BLACK` | Navy Black | `#1A1A2E` | `(26, 26, 46)` | 제목, 본문 텍스트 |
+| `WHITE` | White | `#FFFFFF` | `(255, 255, 255)` | 슬라이드 배경 |
+
+#### Secondary Colors
+
+| Token | Name | HEX | RGB | 용도 |
+|-------|------|-----|-----|------|
+| `DARK_RED` (= LIGHT_NAVY) | Light Navy | `#353968` | `(53, 57, 104)` | 뱃지, 라벨 배경 |
+| `DARK_GRAY` | Dark Gray | `#333333` | `(51, 51, 51)` | 부제목, 보조 텍스트 |
+| `MEDIUM_GRAY` | Medium Gray | `#666666` | `(102, 102, 102)` | 섹션명, 캡션 |
+
+#### Surface Colors
+
+| Token | Name | HEX | RGB | 용도 |
+|-------|------|-----|-----|------|
+| `LIGHT_GRAY` | Warm Grey | `#EFEEE8` | `(239, 238, 232)` | 콘텐츠 박스 배경 |
+| `CHARCOAL` (= NAVY) | Navy | `#1D1E37` | `(29, 30, 55)` | 테이블 헤더, 다크 배경 |
+| `BORDER_GRAY` (= SAND) | Sand | `#C7BB9F` | `(199, 187, 159)` | 구분선, 테두리 |
+
+#### Accent Colors
+
+| Token | Name | HEX | RGB | 용도 |
+|-------|------|-----|-----|------|
+| `ORANGE_70` | Hanwha Orange 70% | `#F89B6C` | `(248, 155, 108)` | 보조 강조 |
+| `ORANGE_50` | Hanwha Orange 50% | `#FBB584` | `(251, 181, 132)` | 연한 강조 |
+| `GREEN` | Green | `#2E7D32` | `(46, 125, 50)` | 미래 계획 항목 |
+| `BLUE` (= TURQUOISE) | Turquoise | `#5C7687` | `(92, 118, 135)` | 보조 강조 |
+
+#### Background Colors (참고)
+
+| Name | HEX | RGB | 용도 |
+|------|-----|-----|------|
+| Sand | `#C7BB9F` | `(199, 187, 159)` | 따뜻한 배경 |
+| Turquoise | `#5C7687` | `(92, 118, 135)` | 차분한 배경 |
+| Navy | `#1D1E37` | `(29, 30, 55)` | 다크 배경 |
+
+### Hanwha Typography
+
+#### Font Family
+
+| 우선순위 | 폰트명 | 비고 |
+|----------|--------|------|
+| 1 (제목) | 한화 B_OTF | Bold — 표지, 섹션 제목 |
+| 2 (본문) | 한화고딕 R_OTF | Regular — 일반 텍스트 |
+| 3 (강조) | 한화고딕 B_OTF | Bold — 테이블 헤더, 강조 |
+| 4 (보조) | 한화고딕 L_OTF | Light — 캡션, 보조 텍스트 |
+| 5 (폴백) | 맑은 고딕 | 폴백 |
+
+### Hanwha Chrome (LG L-Style과의 차이)
+
+| 요소 | LG | 한화 |
+|------|-----|------|
+| 표지 장식 | L-브래킷 (RED) | 하단 오렌지 바 |
+| 액센트 바 두께 | 0.40cm | 0.30cm (더 얇음) |
+| 구분선 높이 | 0.05cm | 0.03cm (더 얇음) |
+| 헤더 바 색상 | Charcoal (#3C3C3C) | Navy (#1D1E37) |
+
+---
 
 ## Layout Dimensions
 
@@ -182,7 +252,7 @@ def set_korean_font(run, font_name):
 ### Roadmap (로드맵)
 ```
 ┌──────────────────────────────┐
-│▌ [SPC] 로드맵           섹션 ●│
+│▌ [프로젝트] 로드맵       섹션 ●│
 │▌ 설명 텍스트                  │
 │▌                              │
 │▌     ◄ 2025 ►◄ 2026 ►◄ 2027 ►│ ← 차콜 쉐브론

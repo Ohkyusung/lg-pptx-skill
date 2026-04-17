@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LG Group PPTX Builder
+LG Group PPTX Builder — L-Style Design System
 LG 그룹 브랜드 가이드라인을 따르는 프레젠테이션 생성 라이브러리
 
 Usage:
@@ -9,7 +9,8 @@ Usage:
     prs = LGPresentation()
     prs.add_cover("프로젝트 제목", subtitle="팀명", date="2025.10.23")
     prs.add_toc([("Summary", []), ("시스템 소개", ["항목1", "항목2"])])
-    prs.add_content("1.1 시스템 개요", section="Summary", bullets=["내용1", "내용2"])
+    prs.add_content("1.1 시스템 개요", section="Summary", chapter="I. Summary",
+                    bullets=["내용1", "내용2"])
     prs.save("output.pptx")
 """
 
@@ -29,15 +30,62 @@ import os
 class LGColors:
     """LG Group brand color palette"""
     RED = RGBColor(0xA5, 0x00, 0x34)           # Primary - LG RED
+    DARK_RED = RGBColor(0xC0, 0x00, 0x00)      # Sub-header badges / labels
     BLACK = RGBColor(0x00, 0x00, 0x00)          # Text primary
     DARK_GRAY = RGBColor(0x33, 0x33, 0x33)      # Text secondary
     MEDIUM_GRAY = RGBColor(0x66, 0x66, 0x66)    # Text tertiary / section labels
-    LIGHT_GRAY = RGBColor(0xF2, 0xF2, 0xF2)     # Surface / content box bg
+    LIGHT_GRAY = RGBColor(0xF2, 0xF2, 0xF2)     # Surface / legacy bg
     BORDER_GRAY = RGBColor(0xCC, 0xCC, 0xCC)     # Borders / dividers
     CHARCOAL = RGBColor(0x3C, 0x3C, 0x3C)       # Header bars / timeline
-    WHITE = RGBColor(0xFF, 0xFF, 0xFF)           # Background
+    WHITE = RGBColor(0xFF, 0xFF, 0xFF)           # Background / content box bg
     GREEN = RGBColor(0x2E, 0x7D, 0x32)          # Future / planned items
     ORANGE = RGBColor(0xD4, 0x76, 0x0A)         # Highlight items
+    BLUE = RGBColor(0x15, 0x65, 0xC0)           # Accent blue
+
+
+class HanwhaColors:
+    """한화 그룹 브랜드 컬러 팔레트 (Hanwha Brand System Design Guide 기반)"""
+    RED = RGBColor(0xF3, 0x73, 0x21)            # = HANWHA_ORANGE (Primary accent, replaces LG RED)
+    DARK_RED = RGBColor(0x35, 0x39, 0x68)       # = LIGHT_NAVY (Badge color, replaces LG DARK_RED)
+    BLACK = RGBColor(0x1A, 0x1A, 0x2E)          # Text primary (navy-black)
+    DARK_GRAY = RGBColor(0x33, 0x33, 0x33)      # Text secondary
+    MEDIUM_GRAY = RGBColor(0x66, 0x66, 0x66)    # Text tertiary
+    LIGHT_GRAY = RGBColor(0xEF, 0xEE, 0xE8)    # Surface (warm grey)
+    BORDER_GRAY = RGBColor(0xC7, 0xBB, 0x9F)   # Sand border
+    CHARCOAL = RGBColor(0x1D, 0x1E, 0x37)       # Navy (header bars)
+    WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+    GREEN = RGBColor(0x2E, 0x7D, 0x32)
+    ORANGE = RGBColor(0xF3, 0x73, 0x21)         # Hanwha Orange 100%
+    BLUE = RGBColor(0x5C, 0x76, 0x87)           # Turquoise
+    # Hanwha-specific extras
+    NAVY = RGBColor(0x1D, 0x1E, 0x37)
+    LIGHT_NAVY = RGBColor(0x35, 0x39, 0x68)
+    ORANGE_70 = RGBColor(0xF8, 0x9B, 0x6C)
+    ORANGE_50 = RGBColor(0xFB, 0xB5, 0x84)
+    SAND = RGBColor(0xC7, 0xBB, 0x9F)
+    TURQUOISE = RGBColor(0x5C, 0x76, 0x87)
+
+
+THEMES = {
+    "lg": {
+        "colors": LGColors,
+        "font_name": "에이투지체",
+        "font_name_latin": "에이투지체",
+        "fallback_font": "맑은 고딕",
+        "cover_decoration": "l_bracket",
+        "accent_bar_width": Cm(0.40),
+        "separator_height": Cm(0.05),
+    },
+    "hanwha": {
+        "colors": HanwhaColors,
+        "font_name": "한화고딕",
+        "font_name_latin": "한화고딕",
+        "fallback_font": "맑은 고딕",
+        "cover_decoration": "bottom_bar",
+        "accent_bar_width": Cm(0.30),
+        "separator_height": Cm(0.03),
+    }
+}
 
 
 class LGTypography:
@@ -56,6 +104,28 @@ class LGTypography:
     TOC_ITEM = Pt(16)
     TOC_SUBITEM = Pt(13)
 
+    # ── Density presets ──
+    # "spacious" — 인포그래픽/비전 슬라이드 (시각적 임팩트, 넉넉한 여백)
+    BODY_SPACIOUS = Pt(16)
+    BULLET_SPACIOUS = Pt(16)
+    TABLE_HEADER_SPACIOUS = Pt(12)
+    TABLE_BODY_SPACIOUS = Pt(11)
+    CAPTION_SPACIOUS = Pt(10)
+
+    # "compact" — 컨설팅 보고서 수준 (내용이 많은 슬라이드)
+    BODY_COMPACT = Pt(10)
+    BULLET_COMPACT = Pt(10)
+    TABLE_HEADER_COMPACT = Pt(9)
+    TABLE_BODY_COMPACT = Pt(8)
+    CAPTION_COMPACT = Pt(8)
+
+    # "dense" — 제안서/구축범위 수준 (빡빡한 테이블, 구성도)
+    BODY_DENSE = Pt(9)
+    BULLET_DENSE = Pt(9)
+    TABLE_HEADER_DENSE = Pt(8)
+    TABLE_BODY_DENSE = Pt(7)
+    CAPTION_DENSE = Pt(7)
+
 
 class LGDimensions:
     """Slide layout dimensions (16:9, 13.333 x 7.5 inches)"""
@@ -68,16 +138,46 @@ class LGDimensions:
     TOP_MARGIN = Cm(0.5)
     BOTTOM_MARGIN = Cm(0.5)
 
-    # Accent bar
-    ACCENT_BAR_WIDTH = Cm(0.3)
-    ACCENT_BAR_LEFT = Cm(0)
+    # NEW Chrome positions (from L-Style reference template)
+    CHAPTER_LEFT = Cm(1.07)
+    CHAPTER_TOP = Cm(0.78)
+    CHAPTER_WIDTH = Cm(9.24)
+    CHAPTER_HEIGHT = Cm(0.68)
 
-    # Content area (after accent bar)
-    CONTENT_LEFT = Cm(1.5)
-    CONTENT_TOP = Cm(0.5)
-    CONTENT_WIDTH = Cm(31.5)  # ~full width minus margins
+    TITLE_LEFT = Cm(1.07)
+    TITLE_TOP = Cm(2.16)
+    TITLE_WIDTH = Cm(25.0)
+    TITLE_HEIGHT = Cm(1.28)
 
-    # L-bracket
+    ACCENT_BAR_LEFT = Cm(0.67)
+    ACCENT_BAR_TOP = Cm(2.30)
+    ACCENT_BAR_WIDTH = Cm(0.40)
+    ACCENT_BAR_HEIGHT = Cm(1.00)
+
+    SUBTITLE_LEFT = Cm(1.07)
+    SUBTITLE_TOP = Cm(3.74)
+    SUBTITLE_WIDTH = Cm(20.0)
+    SUBTITLE_HEIGHT = Cm(0.77)
+
+    RED_LINE_LEFT = Cm(1.06)
+    RED_LINE_TOP = Cm(4.87)
+    RED_LINE_WIDTH = Cm(23.28)
+    RED_LINE_HEIGHT = Cm(0.05)
+
+    TAG_LEFT = Cm(23.89)
+    TAG_TOP = Cm(0.30)
+    TAG_WIDTH = Cm(9.00)
+    TAG_HEIGHT = Cm(0.80)
+
+    DOT_LEFT = Cm(33.07)
+    DOT_TOP = Cm(0.50)
+    DOT_SIZE = Cm(0.35)
+
+    CONTENT_TOP = Cm(5.62)      # Content area starts here
+    CONTENT_LEFT = Cm(1.33)
+    CONTENT_RIGHT_MARGIN = Cm(0.5)
+
+    # L-bracket (keep same)
     BRACKET_ARM_LENGTH = Cm(2.5)
     BRACKET_THICKNESS = Cm(0.4)
 
@@ -97,36 +197,100 @@ def _make_oxml_element(tag, **attribs):
     return element
 
 
+def _apply_shadow(shape, shadow_type="card"):
+    """
+    Apply template-matching shadow to a shape.
+    
+    Shadow types (from L-Style template analysis):
+    - "card": WHITE container ambient shadow (blur=24.6pt, 11.2% opacity)
+    - "content": F2F2F2 content box directional shadow (blur=4pt, dist=3pt, 45°, 40%)
+    - "icon": Circle icon ambient shadow (blur=24.2pt, 14% opacity)
+    """
+    sp = shape._element
+    spPr = sp.find(qn('a:spPr')) if hasattr(sp, 'find') else None
+    if spPr is None:
+        spPr = sp.spPr if hasattr(sp, 'spPr') else None
+    if spPr is None:
+        return
+    
+    # Remove existing effectLst
+    for el in spPr.findall(qn('a:effectLst')):
+        spPr.remove(el)
+    
+    effectLst = _make_oxml_element('a:effectLst')
+    
+    if shadow_type == "card":
+        # Ambient shadow: soft diffuse glow, no offset
+        outerShdw = _make_oxml_element('a:outerShdw', blurRad='312382', algn='bl')
+        srgbClr = _make_oxml_element('a:srgbClr', val='000000')
+        alpha = _make_oxml_element('a:alpha', val='11221')
+        srgbClr.append(alpha)
+        outerShdw.append(srgbClr)
+    elif shadow_type == "content":
+        # Directional shadow: bottom-right, more visible
+        outerShdw = _make_oxml_element('a:outerShdw',
+            blurRad='50800', dist='38100', dir='2700000', algn='tl')
+        srgbClr = _make_oxml_element('a:srgbClr', val='000000')
+        alpha = _make_oxml_element('a:alpha', val='40000')
+        srgbClr.append(alpha)
+        outerShdw.append(srgbClr)
+    elif shadow_type == "icon":
+        # Icon ambient shadow: slightly more opaque than card
+        outerShdw = _make_oxml_element('a:outerShdw', blurRad='307055', algn='bl')
+        srgbClr = _make_oxml_element('a:srgbClr', val='000000')
+        alpha = _make_oxml_element('a:alpha', val='14030')
+        srgbClr.append(alpha)
+        outerShdw.append(srgbClr)
+    else:
+        return
+    
+    effectLst.append(outerShdw)
+    spPr.append(effectLst)
+
+
+
 # ─────────────────────────────────────────────
 # Main Builder Class
 # ─────────────────────────────────────────────
 
 class LGPresentation:
     """
-    LG 그룹 브랜드 가이드라인을 따르는 PPTX 프레젠테이션 빌더
+    LG 그룹 브랜드 가이드라인을 따르는 PPTX 프레젠테이션 빌더 (멀티 테마 지원)
 
     Args:
-        font_name: 한글 폰트 이름 (기본: "에이투지체")
-        font_name_latin: 라틴 폰트 이름 (기본: "A2z")
-        fallback_font: 폴백 폰트 (기본: "맑은 고딕")
-        logo_path: LG 로고 이미지 파일 경로 (선택)
+        font_name: 한글 폰트 이름 (테마 기본값 사용 시 None)
+        font_name_latin: 라틴 폰트 이름 (테마 기본값 사용 시 None)
+        fallback_font: 폴백 폰트 (테마 기본값 사용 시 None)
+        logo_path: 로고 이미지 파일 경로 (선택)
+        theme: 테마 이름 ("lg" 또는 "hanwha", 기본: "lg")
     """
 
-    def __init__(self, font_name="에이투지체", font_name_latin="에이투지체",
-                 fallback_font="맑은 고딕", logo_path=None):
-        self.font_name = font_name
-        self.font_name_latin = font_name_latin
-        self.fallback_font = fallback_font
+    def __init__(self, font_name=None, font_name_latin=None,
+                 fallback_font=None, logo_path=None, theme="lg"):
+        # Resolve theme configuration
+        theme_config = THEMES.get(theme, THEMES["lg"])
+        self.theme = theme
+        self.colors = theme_config["colors"]
+
+        self.font_name = font_name or theme_config["font_name"]
+        self.font_name_latin = font_name_latin or theme_config["font_name_latin"]
+        self.fallback_font = fallback_font or theme_config["fallback_font"]
         self.logo_path = logo_path
 
-        # Weight-specific family names.
-        # This font registers each weight as a separate family (nameID=1),
-        # e.g. "에이투지체 4 Regular", "에이투지체 6 SemiBold", "에이투지체 7 Bold".
-        # PowerPoint on macOS resolves fonts via these full family names,
-        # NOT the PrefFamily (nameID=16) like "에이투지체" or "A2Z".
-        self.font_regular = f"{font_name} 4 Regular"
-        self.font_semibold = f"{font_name} 6 SemiBold"
-        self.font_bold = f"{font_name} 7 Bold"
+        # Theme-specific layout values
+        self.accent_bar_width = theme_config["accent_bar_width"]
+        self.separator_height = theme_config["separator_height"]
+
+        # Weight-specific family names (per-theme font weight mapping)
+        if theme == "hanwha":
+            self.font_regular = "한화고딕 R_OTF"
+            self.font_semibold = "한화 R_OTF"     # 중제목: 한화 오리지널
+            self.font_bold = "한화 B_OTF"          # 대제목: 한화 오리지널 Bold
+        else:
+            # LG: each weight is a separate family (nameID=1)
+            self.font_regular = f"{self.font_name} 4 Regular"
+            self.font_semibold = f"{self.font_name} 6 SemiBold"
+            self.font_bold = f"{self.font_name} 7 Bold"
 
         self.prs = Presentation()
         self.prs.slide_width = LGDimensions.SLIDE_WIDTH
@@ -307,7 +471,7 @@ class LGPresentation:
         """
         arm = arm_length or LGDimensions.BRACKET_ARM_LENGTH
         thick = thickness or LGDimensions.BRACKET_THICKNESS
-        clr = color or LGColors.RED
+        clr = color or self.colors.RED
 
         shapes = slide.shapes
         sw = int(LGDimensions.SLIDE_WIDTH)
@@ -349,73 +513,95 @@ class LGPresentation:
             v_bar.fill.fore_color.rgb = clr
             v_bar.line.fill.background()
 
-    def _add_accent_bar(self, slide, color=None, top=None):
+    def _add_content_chrome(self, slide, title="", section="", subtitle="",
+                            chapter=""):
         """
-        Add a small accent block in the top-left, next to the slide title.
-        This is a short red rectangle that acts as a title marker,
-        matching the LG content slide pattern (see reference images).
+        Add all L-Style chrome elements for a content slide.
+        Returns the y position where content should start (below red line).
 
-        Args:
-            color: Fill color (default: LG RED)
-            top: Top position (default: 0.7cm, aligned with title)
+        Chrome layout (from reference template):
+          - Chapter name: top-left, 10pt RED bold
+          - Accent bar: left of title, RED solid
+          - Title: 24pt BLACK bold
+          - Subtitle: 16pt #333 SemiBold
+          - Red separator line: full-width RED
+          - Tag text: top-right, 11pt #666 right-aligned
+          - Red dot: far top-right, RED oval
         """
-        clr = color or LGColors.RED
-        t = top if top is not None else Cm(0.4)
+        # 1. Chapter name (top-left, small red text)
+        if chapter:
+            self._add_textbox(
+                slide,
+                LGDimensions.CHAPTER_LEFT, LGDimensions.CHAPTER_TOP,
+                LGDimensions.CHAPTER_WIDTH, LGDimensions.CHAPTER_HEIGHT,
+                text=chapter, size=Pt(10), bold=True, color=self.colors.RED
+            )
 
+        # 2. Accent bar (left of title) — width from theme config
         bar = slide.shapes.add_shape(
             MSO_SHAPE.RECTANGLE,
-            Cm(0.8), t, Cm(0.4), Cm(1.0)
+            LGDimensions.ACCENT_BAR_LEFT, LGDimensions.ACCENT_BAR_TOP,
+            self.accent_bar_width, LGDimensions.ACCENT_BAR_HEIGHT
         )
         bar.fill.solid()
-        bar.fill.fore_color.rgb = clr
+        bar.fill.fore_color.rgb = self.colors.RED
         bar.line.fill.background()
-        return bar
 
-    def _add_section_indicator(self, slide, section_name, has_dot=True):
-        """Add section name label in top-right with optional red dot."""
-        # Section name text
-        sw = int(LGDimensions.SLIDE_WIDTH)
-        txBox = self._add_textbox(
-            slide,
-            left=sw - Cm(10), top=Cm(0.3),
-            width=Cm(9), height=Cm(0.8),
-            text=section_name,
-            size=LGTypography.BODY_SMALL,
-            color=LGColors.MEDIUM_GRAY,
-            alignment=PP_ALIGN.RIGHT
-        )
-
-        if has_dot:
-            # Red dot indicator
-            dot_size = Cm(0.35)
-            dot = slide.shapes.add_shape(
-                MSO_SHAPE.OVAL,
-                sw - Cm(0.8), Cm(0.5),
-                dot_size, dot_size
+        # 3. Title
+        if title:
+            self._add_textbox(
+                slide,
+                LGDimensions.TITLE_LEFT, LGDimensions.TITLE_TOP,
+                LGDimensions.TITLE_WIDTH, LGDimensions.TITLE_HEIGHT,
+                text=title, size=Pt(24), bold=True, color=self.colors.BLACK,
+                vertical=MSO_ANCHOR.MIDDLE
             )
-            dot.fill.solid()
-            dot.fill.fore_color.rgb = LGColors.RED
-            dot.line.fill.background()
 
-        return txBox
+        # 4. Subtitle
+        if subtitle:
+            self._add_textbox(
+                slide,
+                LGDimensions.SUBTITLE_LEFT, LGDimensions.SUBTITLE_TOP,
+                LGDimensions.SUBTITLE_WIDTH, LGDimensions.SUBTITLE_HEIGHT,
+                text=subtitle, size=Pt(16), color=self.colors.DARK_GRAY,
+                weight="semibold"
+            )
 
-    def _add_slide_title(self, slide, title, left=None, top=None):
-        """Add slide title text (for content slides, positioned right of accent block)."""
-        l = left or Cm(1.5)
-        t = top or Cm(0.3)
-        return self._add_textbox(
-            slide, l, t,
-            width=Cm(25), height=Cm(1.2),
-            text=title,
-            size=Pt(24),
-            bold=True,
-            color=LGColors.BLACK,
-            vertical=MSO_ANCHOR.MIDDLE
+        # 5. Red separator line — height from theme config
+        line = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            LGDimensions.RED_LINE_LEFT, LGDimensions.RED_LINE_TOP,
+            LGDimensions.RED_LINE_WIDTH, self.separator_height
         )
+        line.fill.solid()
+        line.fill.fore_color.rgb = self.colors.RED
+        line.line.fill.background()
+
+        # 6. Tag text (top-right)
+        if section:
+            self._add_textbox(
+                slide,
+                LGDimensions.TAG_LEFT, LGDimensions.TAG_TOP,
+                LGDimensions.TAG_WIDTH, LGDimensions.TAG_HEIGHT,
+                text=section, size=Pt(11), color=self.colors.MEDIUM_GRAY,
+                alignment=PP_ALIGN.RIGHT
+            )
+
+        # 7. Red dot (far top-right)
+        dot = slide.shapes.add_shape(
+            MSO_SHAPE.OVAL,
+            LGDimensions.DOT_LEFT, LGDimensions.DOT_TOP,
+            LGDimensions.DOT_SIZE, LGDimensions.DOT_SIZE
+        )
+        dot.fill.solid()
+        dot.fill.fore_color.rgb = self.colors.RED
+        dot.line.fill.background()
+
+        return LGDimensions.CONTENT_TOP  # content start y
 
     def _add_horizontal_line(self, slide, left, top, width, color=None, height=None):
         """Add a thin horizontal line."""
-        clr = color or LGColors.BORDER_GRAY
+        clr = color or self.colors.BORDER_GRAY
         h = height or Pt(1)
         line = slide.shapes.add_shape(
             MSO_SHAPE.RECTANGLE,
@@ -426,21 +612,17 @@ class LGPresentation:
         line.line.fill.background()
         return line
 
-    def _add_shadow(self, shape, blur_radius=50800, dist=38100,
-                    direction=2700000, color="000000", alpha=40):
+    def _add_shadow(self, shape, shadow_type="card"):
         """
-        Add a subtle outer drop shadow to a shape for depth/dimension.
+        Add a shadow to a shape matching the L-Style template exactly.
 
-        This injects an <a:effectLst> containing an <a:outerShdw> element
-        into the shape's spPr (shape properties) XML.
-
-        Args:
-            shape: The shape object to add a shadow to
-            blur_radius: Shadow blur in EMU (default ~4pt)
-            dist: Shadow distance in EMU (default ~3pt)
-            direction: Shadow angle in 60000ths of a degree (default 2700000 = 270° = below-right)
-            color: Shadow color hex string without '#' (default "000000")
-            alpha: Shadow opacity percentage 0-100 (default 40)
+        Shadow types (from template analysis):
+        - "card": Ambient glow shadow for WHITE card containers
+                  (blur=312382 EMU, alpha=11.2%, no offset)
+        - "icon": Ambient shadow for circle icons
+                  (blur=307055 EMU, alpha=14%, no offset)
+        - "content": Directional shadow for secondary content boxes
+                     (blur=50800, dist=38100, dir=2700000, alpha=40%)
         """
         spPr = shape._element.spPr
 
@@ -450,20 +632,42 @@ class LGPresentation:
 
         effectLst = _make_oxml_element('a:effectLst')
 
-        outerShdw = _make_oxml_element('a:outerShdw')
-        outerShdw.set('blurRad', str(blur_radius))
-        outerShdw.set('dist', str(dist))
-        outerShdw.set('dir', str(direction))
-        outerShdw.set('rotWithShape', '0')
+        if shadow_type == "card":
+            outerShdw = _make_oxml_element('a:outerShdw')
+            outerShdw.set('blurRad', '312382')
+            outerShdw.set('algn', 'bl')
+            srgbClr = _make_oxml_element('a:srgbClr')
+            srgbClr.set('val', '000000')
+            alphaElem = _make_oxml_element('a:alpha')
+            alphaElem.set('val', '11221')
+            srgbClr.append(alphaElem)
+            outerShdw.append(srgbClr)
+        elif shadow_type == "icon":
+            outerShdw = _make_oxml_element('a:outerShdw')
+            outerShdw.set('blurRad', '307055')
+            outerShdw.set('algn', 'bl')
+            srgbClr = _make_oxml_element('a:srgbClr')
+            srgbClr.set('val', '000000')
+            alphaElem = _make_oxml_element('a:alpha')
+            alphaElem.set('val', '14030')
+            srgbClr.append(alphaElem)
+            outerShdw.append(srgbClr)
+        elif shadow_type == "content":
+            outerShdw = _make_oxml_element('a:outerShdw')
+            outerShdw.set('blurRad', '50800')
+            outerShdw.set('dist', '38100')
+            outerShdw.set('dir', '2700000')
+            outerShdw.set('algn', 'tl')
+            outerShdw.set('rotWithShape', '0')
+            srgbClr = _make_oxml_element('a:srgbClr')
+            srgbClr.set('val', '000000')
+            alphaElem = _make_oxml_element('a:alpha')
+            alphaElem.set('val', '40000')
+            srgbClr.append(alphaElem)
+            outerShdw.append(srgbClr)
+        else:
+            return
 
-        srgbClr = _make_oxml_element('a:srgbClr')
-        srgbClr.set('val', color)
-
-        alphaElem = _make_oxml_element('a:alpha')
-        alphaElem.set('val', str(alpha * 1000))  # OOXML uses 1000ths of a percent
-        srgbClr.append(alphaElem)
-
-        outerShdw.append(srgbClr)
         effectLst.append(outerShdw)
         spPr.append(effectLst)
 
@@ -504,8 +708,14 @@ class LGPresentation:
             tcPr.append(ln)
 
     def _format_table_cell(self, cell, text="", is_header=False, font_size=None,
-                           alignment=None, bold=None, text_color=None, bg_color=None):
-        """Format a table cell with LG styling."""
+                           alignment=None, bold=None, text_color=None, bg_color=None,
+                           density="normal"):
+        """Format a table cell with LG styling.
+
+        Args:
+            density: "normal" | "compact" | "dense"
+                     — controls default font size and cell margins.
+        """
         tf = cell.text_frame
         tf.clear()
         tf.word_wrap = True
@@ -515,27 +725,61 @@ class LGPresentation:
         run = p.add_run()
         run.text = text
 
-        if is_header:
-            self._set_font(run, size=font_size or LGTypography.TABLE_HEADER,
-                          bold=True if bold is None else bold,
-                          color=text_color or LGColors.WHITE)
-            cell.fill.solid()
-            cell.fill.fore_color.rgb = bg_color or LGColors.CHARCOAL
+        # Resolve default font size per density
+        if font_size is None:
+            if density == "spacious":
+                default_hdr = LGTypography.TABLE_HEADER_SPACIOUS
+                default_body = LGTypography.TABLE_BODY_SPACIOUS
+            elif density == "compact":
+                default_hdr = LGTypography.TABLE_HEADER_COMPACT
+                default_body = LGTypography.TABLE_BODY_COMPACT
+            elif density == "dense":
+                default_hdr = LGTypography.TABLE_HEADER_DENSE
+                default_body = LGTypography.TABLE_BODY_DENSE
+            else:
+                default_hdr = LGTypography.TABLE_HEADER
+                default_body = LGTypography.TABLE_BODY
         else:
-            self._set_font(run, size=font_size or LGTypography.TABLE_BODY,
+            default_hdr = font_size
+            default_body = font_size
+
+        if is_header:
+            self._set_font(run, size=default_hdr,
+                          bold=True if bold is None else bold,
+                          color=text_color or self.colors.WHITE)
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = bg_color or self.colors.CHARCOAL
+        else:
+            self._set_font(run, size=default_body,
                           bold=bold or False,
-                          color=text_color or LGColors.BLACK)
+                          color=text_color or self.colors.BLACK)
             if bg_color:
                 cell.fill.solid()
                 cell.fill.fore_color.rgb = bg_color
             else:
                 cell.fill.background()
 
-        # Margins
-        cell.margin_left = Cm(0.2)
-        cell.margin_right = Cm(0.2)
-        cell.margin_top = Cm(0.1)
-        cell.margin_bottom = Cm(0.1)
+        # Margins — tighter for compact/dense, wider for spacious
+        if density == "spacious":
+            cell.margin_left = Cm(0.3)
+            cell.margin_right = Cm(0.3)
+            cell.margin_top = Cm(0.15)
+            cell.margin_bottom = Cm(0.15)
+        elif density == "dense":
+            cell.margin_left = Cm(0.1)
+            cell.margin_right = Cm(0.1)
+            cell.margin_top = Cm(0.05)
+            cell.margin_bottom = Cm(0.05)
+        elif density == "compact":
+            cell.margin_left = Cm(0.15)
+            cell.margin_right = Cm(0.15)
+            cell.margin_top = Cm(0.08)
+            cell.margin_bottom = Cm(0.08)
+        else:
+            cell.margin_left = Cm(0.2)
+            cell.margin_right = Cm(0.2)
+            cell.margin_top = Cm(0.1)
+            cell.margin_bottom = Cm(0.1)
         cell.vertical_anchor = MSO_ANCHOR.MIDDLE
 
     # ─────────────────────────────────────────
@@ -544,7 +788,7 @@ class LGPresentation:
 
     def add_cover(self, title, subtitle="", date="", logo_path=None):
         """
-        Add a cover slide with L-bracket decorations.
+        Add a cover slide with theme-specific decorations.
 
         Args:
             title: Main presentation title
@@ -554,9 +798,22 @@ class LGPresentation:
         """
         slide = self._get_blank_slide()
 
-        # L-brackets
-        self._add_l_bracket(slide, "top-left")
-        self._add_l_bracket(slide, "bottom-right")
+        # Theme-specific cover decoration
+        if self.theme == "hanwha":
+            # Hanwha: bottom orange accent bar instead of L-brackets
+            bar_h = Cm(0.15)
+            bar = slide.shapes.add_shape(
+                MSO_SHAPE.RECTANGLE,
+                Cm(0), LGDimensions.SLIDE_HEIGHT - bar_h,
+                LGDimensions.SLIDE_WIDTH, bar_h
+            )
+            bar.fill.solid()
+            bar.fill.fore_color.rgb = self.colors.RED
+            bar.line.fill.background()
+        else:
+            # LG: L-brackets
+            self._add_l_bracket(slide, "top-left")
+            self._add_l_bracket(slide, "bottom-right")
 
         # Title (centered)
         sw = int(LGDimensions.SLIDE_WIDTH)
@@ -569,7 +826,7 @@ class LGPresentation:
             text=title,
             size=LGTypography.COVER_TITLE,
             bold=True,
-            color=LGColors.BLACK,
+            color=self.colors.BLACK,
             alignment=PP_ALIGN.CENTER,
             vertical=MSO_ANCHOR.MIDDLE
         )
@@ -597,7 +854,7 @@ class LGPresentation:
                 run1 = p1.add_run()
                 run1.text = subtitle
                 self._set_font(run1, size=LGTypography.COVER_SUBTITLE,
-                              color=LGColors.DARK_GRAY)
+                              color=self.colors.DARK_GRAY)
 
             if date:
                 p2 = tf.add_paragraph()
@@ -606,7 +863,7 @@ class LGPresentation:
                 run2 = p2.add_run()
                 run2.text = date
                 self._set_font(run2, size=LGTypography.COVER_SUBTITLE,
-                              bold=True, color=LGColors.BLACK)
+                              bold=True, color=self.colors.BLACK)
 
         # Logo (if provided)
         logo = logo_path or self.logo_path
@@ -642,7 +899,7 @@ class LGPresentation:
             width=Cm(10), height=Cm(1.5),
             text="Contents",
             size=LGTypography.TOC_TITLE,
-            color=LGColors.BLACK
+            color=self.colors.BLACK
         )
 
         # Red underline bar
@@ -651,7 +908,7 @@ class LGPresentation:
             Cm(2), Cm(4.0), Cm(2.5), Cm(0.15)
         )
         red_bar.fill.solid()
-        red_bar.fill.fore_color.rgb = LGColors.RED
+        red_bar.fill.fore_color.rgb = self.colors.RED
         red_bar.line.fill.background()
 
         # Gray divider line below title
@@ -675,7 +932,7 @@ class LGPresentation:
                 text=toc_text,
                 size=LGTypography.TOC_ITEM,
                 bold=True,
-                color=LGColors.RED
+                color=self.colors.RED
             )
             y_pos += Cm(0.85)
 
@@ -688,7 +945,7 @@ class LGPresentation:
                         width=Cm(20), height=Cm(0.6),
                         text=f"- {sub}",
                         size=LGTypography.TOC_SUBITEM,
-                        color=LGColors.DARK_GRAY
+                        color=self.colors.DARK_GRAY
                     )
                     y_pos += Cm(0.55)
 
@@ -698,134 +955,155 @@ class LGPresentation:
 
     def add_section_divider(self, number, title, color=None):
         """
-        Add a section divider slide.
+        Add a modern section divider slide.
+
+        Clean, minimal design: large section number with accent line,
+        title text, and subtle decorative elements.
 
         Args:
             number: Section number (e.g., "I", "II", "01")
             title: Section title
-            color: Override background color
+            color: Override accent color (default: LG RED)
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
+        accent = color or self.colors.RED
 
-        # Left colored block (1/3 of slide)
-        block_width = sw // 3
-        block = slide.shapes.add_shape(
+        # ── Background: clean white ──
+        # Subtle bottom accent bar (thin, full width)
+        bottom_bar = slide.shapes.add_shape(
             MSO_SHAPE.RECTANGLE,
-            0, 0, block_width, sh
+            0, sh - int(Cm(0.4)), sw, int(Cm(0.4))
         )
-        block.fill.solid()
-        block.fill.fore_color.rgb = color or LGColors.RED
-        block.line.fill.background()
-        self._add_shadow(block)
+        bottom_bar.fill.solid()
+        bottom_bar.fill.fore_color.rgb = accent
+        bottom_bar.line.fill.background()
 
-        # Section number on colored block
-        self._add_textbox(
+        # ── Left vertical accent line ──
+        vert_line = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            int(Cm(3.5)), int(Cm(5.0)),
+            int(Cm(0.25)), int(Cm(8.5))
+        )
+        vert_line.fill.solid()
+        vert_line.fill.fore_color.rgb = accent
+        vert_line.line.fill.background()
+
+        # ── Section number (large, light gray) ──
+        num_box = self._add_textbox(
             slide,
-            left=Cm(2), top=sh // 2 - Cm(3),
-            width=block_width - Cm(3), height=Cm(2),
+            left=Cm(5.0), top=Cm(4.0),
+            width=Cm(10), height=Cm(5.5),
             text=str(number),
-            size=Pt(48),
+            size=Pt(72),
             bold=True,
-            color=LGColors.WHITE,
+            color=RGBColor(0xE0, 0xE0, 0xE0),
             alignment=PP_ALIGN.LEFT
         )
 
-        # Title on white area
+        # ── Title (bold, overlapping number area) ──
         self._add_textbox(
             slide,
-            left=block_width + Cm(2), top=sh // 2 - Cm(2),
-            width=sw - block_width - Cm(4), height=Cm(3),
+            left=Cm(5.0), top=Cm(9.0),
+            width=Cm(24), height=Cm(3.5),
             text=title,
-            size=Pt(36),
+            size=Pt(32),
             bold=True,
-            color=LGColors.BLACK,
+            color=self.colors.BLACK,
             alignment=PP_ALIGN.LEFT,
-            vertical=MSO_ANCHOR.MIDDLE
+            vertical=MSO_ANCHOR.TOP
         )
+
+        # ── Short red underline below title ──
+        underline = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            int(Cm(5.0)), int(Cm(12.8)),
+            int(Cm(4.0)), int(Cm(0.15))
+        )
+        underline.fill.solid()
+        underline.fill.fore_color.rgb = accent
+        underline.line.fill.background()
 
         return slide
 
     def add_content(self, title, section="", body="", bullets=None,
-                    sub_title=""):
+                    sub_title="", subtitle="", chapter="",
+                    density="normal"):
         """
-        Add a standard content slide with left accent bar.
+        Add a standard content slide with L-Style chrome.
 
         Args:
             title: Slide title (e.g., "1.1 시스템 개요")
-            section: Section name shown in top-right
+            section: Section name shown in top-right tag
             body: Body text paragraph
             bullets: List of bullet point strings
-            sub_title: Subtitle text below title
+            sub_title: Subtitle text below title (legacy alias)
+            subtitle: Subtitle text below title (preferred)
+            chapter: Chapter name shown top-left in red
+            density: "normal" | "compact" | "dense"
+                     — controls font size and spacing for body/bullets.
         """
         slide = self._get_blank_slide()
+        _subtitle = subtitle or sub_title
 
-        # Left accent bar
-        self._add_accent_bar(slide)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=_subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
-        # Section indicator (top-right)
-        if section:
-            self._add_section_indicator(slide, section)
-
-        # Title
-        self._add_slide_title(slide, title)
-
-        # Subtitle
-        y_pos = Cm(1.8)
-        if sub_title:
-            self._add_textbox(
-                slide,
-                left=Cm(1.5), top=y_pos,
-                width=Cm(28), height=Cm(1.0),
-                text=sub_title,
-                size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-            y_pos = Cm(2.8)
+        # Resolve sizes per density
+        if density == "spacious":
+            body_size = LGTypography.BODY_SPACIOUS
+            bullet_size_few = LGTypography.BODY_SPACIOUS
+            bullet_size_many = LGTypography.BULLET_SPACIOUS
+            space_few = Pt(14)
+            space_many = Pt(8)
+        elif density == "dense":
+            body_size = LGTypography.BODY_DENSE
+            bullet_size_few = LGTypography.BODY_DENSE
+            bullet_size_many = LGTypography.BULLET_DENSE
+            space_few = Pt(4)
+            space_many = Pt(2)
+        elif density == "compact":
+            body_size = LGTypography.BODY_COMPACT
+            bullet_size_few = LGTypography.BODY_COMPACT
+            bullet_size_many = LGTypography.BULLET_COMPACT
+            space_few = Pt(6)
+            space_many = Pt(2)
         else:
-            y_pos = Cm(2.2)
+            body_size = Pt(14)
+            bullet_size_few = Pt(14)
+            bullet_size_many = LGTypography.BODY
+            space_few = Pt(8)
+            space_many = Pt(3)
 
         # Body text
         if body:
             body_box = self._add_textbox(
                 slide,
-                left=Cm(1.5), top=y_pos,
+                left=LGDimensions.CONTENT_LEFT, top=y_pos,
                 width=Cm(31), height=Cm(12),
                 text=body,
-                size=Pt(14),
-                color=LGColors.BLACK
+                size=body_size,
+                color=self.colors.BLACK
             )
-            y_pos += Cm(2.0)
+            y_pos += int(Cm(2.0))
 
         # Bullet points
         if bullets:
-            # Determine if few bullets → use larger font and spacing
             few_bullets = len(bullets) <= 4 and not body
 
-            # Add thin LG RED divider line between title and bullets for few-bullet slides
-            if few_bullets:
-                divider = slide.shapes.add_shape(
-                    MSO_SHAPE.RECTANGLE,
-                    Cm(1.5), int(y_pos) - int(Cm(0.15)),
-                    Cm(31), Pt(1.5)
-                )
-                divider.fill.solid()
-                divider.fill.fore_color.rgb = LGColors.RED
-                divider.line.fill.background()
-                y_pos = int(y_pos) + int(Cm(0.2))
-
             bullet_box = slide.shapes.add_textbox(
-                Cm(1.5), y_pos, Cm(31), Cm(14)
+                LGDimensions.CONTENT_LEFT, y_pos, Cm(31), Cm(12)
             )
             tf = bullet_box.text_frame
             tf.word_wrap = True
             bullet_box.fill.background()
             bullet_box.line.fill.background()
 
-            bullet_font_size = Pt(14) if few_bullets else LGTypography.BODY
-            bullet_space_after = Pt(8) if few_bullets else Pt(3)
+            bullet_font_size = bullet_size_few if few_bullets else bullet_size_many
+            bullet_space_after = space_few if few_bullets else space_many
 
             for j, bullet in enumerate(bullets):
                 if j == 0:
@@ -849,17 +1127,17 @@ class LGPresentation:
 
                 run = p.add_run()
                 run.text = bullet
-                self._set_font(run, size=bullet_font_size, color=LGColors.BLACK)
+                self._set_font(run, size=bullet_font_size, color=self.colors.BLACK)
 
         return slide
 
     def add_roadmap(self, title, section="", subtitle="", years=None,
-                    roadmap_items=None, table_data=None):
+                    roadmap_items=None, table_data=None, chapter=""):
         """
         Add a roadmap timeline slide.
 
         Args:
-            title: Slide title (e.g., "[SPC] 로드맵 및 계열사별 비교")
+            title: Slide title (e.g., "[프로젝트] 로드맵 및 계열사별 비교")
             section: Section name for top-right indicator
             subtitle: Description text below title
             years: List of year/phase strings for timeline headers
@@ -871,7 +1149,7 @@ class LGPresentation:
                         {
                             "items_by_year": [
                                 # Items for each year column
-                                [{"text": "항목", "tag": "LGES", "tag_color": "#1565C0"}],
+                                [{"text": "항목", "tag": "계열사A", "tag_color": "#1565C0"}],
                                 [{"text": "항목2", "color": "green"}],
                                 [{"text": "항목3", "color": "orange"}]
                             ]
@@ -884,35 +1162,15 @@ class LGPresentation:
                     "headers": ["계열사", "DX 수준", "AI 적용", ...],
                     "rows": [["에너지솔루션", "Lv3", "적용(예정)", ...], ...]
                 }
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        # Left accent bar
-        self._add_accent_bar(slide)
-
-        # Section indicator
-        if section:
-            self._add_section_indicator(slide, section)
-
-        # Title
-        self._add_slide_title(slide, title)
-
-        # Subtitle
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide,
-                left=Cm(1.5), top=y_pos,
-                width=Cm(28), height=Cm(1.0),
-                text=subtitle,
-                size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         # Timeline headers (chevron/arrow style)
         if years:
@@ -925,10 +1183,10 @@ class LGPresentation:
                 x = int(header_left) + (col_width * i)
                 header_bar = slide.shapes.add_shape(
                     MSO_SHAPE.CHEVRON,
-                    x, int(y_pos), col_width, Cm(1.2)
+                    x, y_pos, col_width, Cm(1.2)
                 )
                 header_bar.fill.solid()
-                header_bar.fill.fore_color.rgb = LGColors.CHARCOAL
+                header_bar.fill.fore_color.rgb = self.colors.CHARCOAL
                 header_bar.line.fill.background()
                 self._add_shadow(header_bar)
 
@@ -941,9 +1199,9 @@ class LGPresentation:
                 p.alignment = PP_ALIGN.CENTER
                 run = p.add_run()
                 run.text = year_text
-                self._set_font(run, size=Pt(11), bold=True, color=LGColors.WHITE)
+                self._set_font(run, size=Pt(11), bold=True, color=self.colors.WHITE)
 
-            y_pos += Cm(1.8)
+            y_pos += int(Cm(1.8))
 
         # Roadmap content grid
         if roadmap_items:
@@ -954,11 +1212,11 @@ class LGPresentation:
             if label_text and years:
                 label_height = Cm(len(rows) * 4.5) if rows else Cm(4)
                 label_block = slide.shapes.add_shape(
-                    MSO_SHAPE.RECTANGLE,
-                    Cm(1.5), int(y_pos), Cm(2.5), label_height
+                    MSO_SHAPE.ROUNDED_RECTANGLE,
+                    Cm(1.5), y_pos, Cm(2.5), label_height
                 )
                 label_block.fill.solid()
-                label_block.fill.fore_color.rgb = LGColors.RED
+                label_block.fill.fore_color.rgb = self.colors.RED
                 label_block.line.fill.background()
                 self._add_shadow(label_block)
 
@@ -975,7 +1233,7 @@ class LGPresentation:
                     p.alignment = PP_ALIGN.CENTER
                     run = p.add_run()
                     run.text = line
-                    self._set_font(run, size=Pt(11), bold=True, color=LGColors.WHITE)
+                    self._set_font(run, size=Pt(11), bold=True, color=self.colors.WHITE)
 
             # Content cells
             if years and rows:
@@ -985,20 +1243,35 @@ class LGPresentation:
 
                 for row_idx, row_data in enumerate(rows):
                     items_by_year = row_data.get("items_by_year", [])
-                    row_top = int(y_pos) + (int(Cm(4.5)) * row_idx)
+                    row_top = y_pos + (int(Cm(4.5)) * row_idx)
 
                     for col_idx, year_items in enumerate(items_by_year):
                         cell_x = int(content_left) + (col_width * col_idx)
 
-                        # Cell background
+                        # Cell background (WHITE rounded rectangle)
                         cell_bg = slide.shapes.add_shape(
-                            MSO_SHAPE.RECTANGLE,
+                            MSO_SHAPE.ROUNDED_RECTANGLE,
                             cell_x + Cm(0.1), row_top + Cm(0.1),
                             col_width - Cm(0.2), Cm(4.0)
                         )
                         cell_bg.fill.solid()
-                        cell_bg.fill.fore_color.rgb = LGColors.LIGHT_GRAY
-                        cell_bg.line.fill.background()
+                        cell_bg.fill.fore_color.rgb = self.colors.WHITE
+                        cell_bg.line.color.rgb = self.colors.RED
+                        cell_bg.line.width = Pt(1)
+                        # Set corner radius (template: val 8000)
+                        _spPr = cell_bg._element.spPr
+                        _pg = _spPr.find(qn('a:prstGeom'))
+                        if _pg is not None:
+                            _al = _pg.find(qn('a:avLst'))
+                            if _al is None:
+                                _al = _make_oxml_element('a:avLst')
+                                _pg.append(_al)
+                            for _gd in _al.findall(qn('a:gd')):
+                                _al.remove(_gd)
+                            _gd = _make_oxml_element('a:gd')
+                            _gd.set('name', 'adj')
+                            _gd.set('fmla', 'val 8000')
+                            _al.append(_gd)
                         self._add_shadow(cell_bg)
 
                         # Cell content
@@ -1025,11 +1298,11 @@ class LGPresentation:
                                 item_color_name = None if isinstance(item, str) else item.get("color", None)
 
                                 if item_color_name == "green":
-                                    text_color = LGColors.GREEN
+                                    text_color = self.colors.GREEN
                                 elif item_color_name == "orange":
-                                    text_color = LGColors.ORANGE
+                                    text_color = self.colors.ORANGE
                                 else:
-                                    text_color = LGColors.BLACK
+                                    text_color = self.colors.BLACK
 
                                 # Bullet
                                 pPr = p._p.get_or_add_pPr()
@@ -1042,7 +1315,7 @@ class LGPresentation:
                                 self._set_font(run, size=LGTypography.BODY_SMALL,
                                               color=text_color)
 
-                                # Tag badge (e.g., "LGES")
+                                # Tag badge (e.g., "계열사A")
                                 if isinstance(item, dict) and item.get("tag"):
                                     tag_run = p.add_run()
                                     tag_run.text = f"  {item['tag']}"
@@ -1079,7 +1352,7 @@ class LGPresentation:
                 text=f"\u25a0 {title}",
                 size=LGTypography.BODY,
                 bold=True,
-                color=LGColors.BLACK
+                color=self.colors.BLACK
             )
 
         # Table
@@ -1116,12 +1389,14 @@ class LGPresentation:
         # Data rows
         for r, row in enumerate(rows):
             for c, val in enumerate(row):
-                bg = LGColors.WHITE if r % 2 == 0 else LGColors.LIGHT_GRAY
+                bg = self.colors.WHITE if r % 2 == 0 else self.colors.LIGHT_GRAY
                 self._format_table_cell(table.cell(r + 1, c), str(val), bg_color=bg)
                 self._set_cell_border(table.cell(r + 1, c))
 
     def add_table(self, title, section="", headers=None, rows=None,
-                  col_widths=None, subtitle=""):
+                  col_widths=None, subtitle="", chapter="",
+                  density="normal", merge_column=None,
+                  row_alignment=None, header_alignment=None):
         """
         Add a dedicated table slide.
 
@@ -1129,51 +1404,63 @@ class LGPresentation:
             title: Slide title
             section: Section name for top-right
             headers: List of column header strings
-            rows: List of row data (list of lists)
+            rows: List of row data (list of lists).
+                  To merge cells vertically, set the merge column value
+                  to "" for continuation rows (same as the row above).
             col_widths: Optional list of column widths in Cm
             subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
+            density: "normal" | "compact" | "dense"
+                     — controls font size, cell margins, row height
+            merge_column: Column index (0-based) to auto-merge vertically
+                          when consecutive cells have the same value.
+                          Can be int or list of ints for multiple columns.
+            row_alignment: PP_ALIGN value for data cells (default: CENTER)
+            header_alignment: PP_ALIGN value for header cells (default: CENTER)
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        # Left accent bar
-        self._add_accent_bar(slide)
-
-        # Section indicator
-        if section:
-            self._add_section_indicator(slide, section)
-
-        # Title
-        self._add_slide_title(slide, title)
-
-        # Subtitle
-        y_pos = Cm(2.2)
-        if subtitle:
-            self._add_textbox(
-                slide,
-                left=Cm(1.5), top=Cm(1.8),
-                width=Cm(28), height=Cm(1.0),
-                text=subtitle,
-                size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-            y_pos = Cm(2.8)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         if not headers or not rows:
             return slide
 
-        # Table
+        # Table dimensions — adjust per density level
         num_rows = len(rows) + 1
         num_cols = len(headers)
-        table_width = sw - int(Cm(2.0))
-        available_height = int(LGDimensions.SLIDE_HEIGHT) - int(y_pos) - int(Cm(0.5))
-        row_height = min(Cm(1.2), available_height // num_rows)
+
+        if density == "spacious":
+            table_left = int(Cm(2.0))
+            table_width = sw - int(Cm(3.0))
+            bottom_margin = int(Cm(0.8))
+            max_row_height = Cm(1.6)
+        elif density == "dense":
+            table_left = int(Cm(1.0))
+            table_width = sw - int(Cm(1.5))
+            bottom_margin = int(Cm(0.3))
+            max_row_height = Cm(0.85)
+        elif density == "compact":
+            table_left = int(Cm(1.2))
+            table_width = sw - int(Cm(1.7))
+            bottom_margin = int(Cm(0.4))
+            max_row_height = Cm(1.0)
+        else:
+            table_left = int(Cm(1.5))
+            table_width = sw - int(Cm(2.0))
+            bottom_margin = int(Cm(0.5))
+            max_row_height = Cm(1.2)
+
+        available_height = int(LGDimensions.SLIDE_HEIGHT) - y_pos - bottom_margin
+        row_height = min(max_row_height, available_height // num_rows)
         table_height = row_height * num_rows
 
         table_shape = slide.shapes.add_table(
             num_rows, num_cols,
-            Cm(1.5), int(y_pos),
+            table_left, y_pos,
             table_width, table_height
         )
         table = table_shape.table
@@ -1198,52 +1485,84 @@ class LGPresentation:
 
         # Header row
         for c, header in enumerate(headers):
-            self._format_table_cell(table.cell(0, c), header, is_header=True)
+            h_align = header_alignment or PP_ALIGN.CENTER
+            self._format_table_cell(table.cell(0, c), header, is_header=True,
+                                    density=density, alignment=h_align)
             self._set_cell_border(table.cell(0, c), color="3C3C3C")
 
         # Data rows
+        d_align = row_alignment or PP_ALIGN.CENTER
         for r, row in enumerate(rows):
             for c, val in enumerate(row):
-                bg = LGColors.WHITE if r % 2 == 0 else LGColors.LIGHT_GRAY
-                self._format_table_cell(table.cell(r + 1, c), str(val), bg_color=bg)
+                bg = self.colors.WHITE if r % 2 == 0 else self.colors.LIGHT_GRAY
+                self._format_table_cell(table.cell(r + 1, c), str(val),
+                                        bg_color=bg, density=density,
+                                        alignment=d_align)
                 self._set_cell_border(table.cell(r + 1, c))
+
+        # Vertical merge for specified columns
+        if merge_column is not None:
+            merge_cols = merge_column if isinstance(merge_column, (list, tuple)) else [merge_column]
+            for mc in merge_cols:
+                if mc >= num_cols:
+                    continue
+                r = 1  # start from first data row (row index 1 in table)
+                while r < num_rows:
+                    cell_text = table.cell(r, mc).text.strip()
+                    if not cell_text:
+                        r += 1
+                        continue
+                    # Find consecutive rows with same value or empty string
+                    merge_end = r + 1
+                    while merge_end < num_rows:
+                        next_text = table.cell(merge_end, mc).text.strip()
+                        if next_text == "" or next_text == cell_text:
+                            merge_end += 1
+                        else:
+                            break
+                    if merge_end > r + 1:
+                        # Merge cells vertically
+                        top_cell = table.cell(r, mc)
+                        bottom_cell = table.cell(merge_end - 1, mc)
+                        top_cell.merge(bottom_cell)
+                        # Re-format the merged cell
+                        bg = self.colors.LIGHT_GRAY
+                        self._format_table_cell(top_cell, cell_text,
+                                                bg_color=bg, density=density,
+                                                bold=True, alignment=PP_ALIGN.CENTER)
+                        self._set_cell_border(top_cell)
+                        r = merge_end
+                    else:
+                        r += 1
 
         return slide
 
-    def add_blank_content(self, title, section="", subtitle=""):
+    def add_blank_content(self, title, section="", subtitle="", chapter=""):
         """
-        Add a blank content slide with just the chrome (accent bar, title, section).
-        Returns the slide object for custom content addition.
+        Add a blank content slide with just the L-Style chrome.
+        Returns (slide, y_pos) tuple for custom free-form content addition.
 
         Args:
             title: Slide title
             section: Section name for top-right
             subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
+
+        Returns:
+            tuple: (slide, y_pos) where y_pos is the pixel position
+                   where content should start (below red separator line).
         """
         slide = self._get_blank_slide()
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
 
-        if subtitle:
-            self._add_textbox(
-                slide,
-                left=Cm(1.5), top=Cm(1.8),
-                width=Cm(28), height=Cm(1.0),
-                text=subtitle,
-                size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-
-        return slide
+        return slide, int(y_pos)
 
     def add_recommendation(self, title="제언", section="", subtitle="",
-                           recommendations=None):
+                           recommendations=None, chapter=""):
         """
-        Add a recommendation (제언) slide — commonly placed before
+        Add a recommendation slide — commonly placed before
         the closing slide. Displays numbered recommendation items
         with optional detail text.
 
@@ -1258,32 +1577,22 @@ class LGPresentation:
                     {"title": "데이터 품질 확보", "detail": "데이터 정합성 검증 체계 구축"},
                     {"title": "MLOps 성숙도 향상", "detail": "단계적 자동화 파이프라인 도입"},
                 ]
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         recommendations = recommendations or []
         if not recommendations:
             return slide
 
         # Numbered recommendation items
-        item_y = int(y_pos) + int(Cm(0.3))
+        item_y = y_pos + int(Cm(0.3))
         for idx, rec in enumerate(recommendations):
             if isinstance(rec, dict):
                 rec_title = rec.get("title", "")
@@ -1301,7 +1610,7 @@ class LGPresentation:
                 Cm(1.5), item_y, int(circle_size), int(circle_size)
             )
             circle.fill.solid()
-            circle.fill.fore_color.rgb = LGColors.RED
+            circle.fill.fore_color.rgb = self.colors.RED
             circle.line.fill.background()
             tf = circle.text_frame
             tf.clear()
@@ -1311,7 +1620,7 @@ class LGPresentation:
             p.alignment = PP_ALIGN.CENTER
             run = p.add_run()
             run.text = num_label
-            self._set_font(run, size=Pt(14), bold=True, color=LGColors.WHITE)
+            self._set_font(run, size=Pt(14), bold=True, color=self.colors.WHITE)
 
             # Recommendation title text
             text_left = Cm(3.2)
@@ -1320,7 +1629,7 @@ class LGPresentation:
                 Cm(29), Cm(1.2),
                 text=rec_title,
                 size=Pt(16), bold=True,
-                color=LGColors.BLACK,
+                color=self.colors.BLACK,
                 alignment=PP_ALIGN.LEFT,
                 vertical=MSO_ANCHOR.MIDDLE
             )
@@ -1332,7 +1641,7 @@ class LGPresentation:
                     Cm(29), Cm(1.0),
                     text=rec_detail,
                     size=LGTypography.BODY,
-                    color=LGColors.DARK_GRAY,
+                    color=self.colors.DARK_GRAY,
                     alignment=PP_ALIGN.LEFT,
                     vertical=MSO_ANCHOR.TOP
                 )
@@ -1354,9 +1663,22 @@ class LGPresentation:
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        # L-brackets (same as cover)
-        self._add_l_bracket(slide, "top-left")
-        self._add_l_bracket(slide, "bottom-right")
+        # Theme-specific closing decoration
+        if self.theme == "hanwha":
+            # Hanwha: bottom orange accent bar
+            bar_h = Cm(0.15)
+            bar = slide.shapes.add_shape(
+                MSO_SHAPE.RECTANGLE,
+                Cm(0), LGDimensions.SLIDE_HEIGHT - bar_h,
+                LGDimensions.SLIDE_WIDTH, bar_h
+            )
+            bar.fill.solid()
+            bar.fill.fore_color.rgb = self.colors.RED
+            bar.line.fill.background()
+        else:
+            # LG: L-brackets (same as cover)
+            self._add_l_bracket(slide, "top-left")
+            self._add_l_bracket(slide, "bottom-right")
 
         # Closing text (centered)
         self._add_textbox(
@@ -1366,7 +1688,7 @@ class LGPresentation:
             text=text,
             size=Pt(36),
             bold=True,
-            color=LGColors.BLACK,
+            color=self.colors.BLACK,
             alignment=PP_ALIGN.CENTER,
             vertical=MSO_ANCHOR.MIDDLE
         )
@@ -1378,7 +1700,7 @@ class LGPresentation:
                 width=sw - Cm(6), height=Cm(1.5),
                 text=subtitle,
                 size=LGTypography.COVER_SUBTITLE,
-                color=LGColors.DARK_GRAY,
+                color=self.colors.DARK_GRAY,
                 alignment=PP_ALIGN.CENTER
             )
 
@@ -1397,7 +1719,7 @@ class LGPresentation:
     # ─────────────────────────────────────────
 
     def add_summary_matrix(self, title, section="", headers=None,
-                           row_groups=None, subtitle=""):
+                           row_groups=None, subtitle="", chapter=""):
         """
         Add a summary matrix table — grouped rows with merged category cells.
         Matches the LG pattern of category labels on the left with detailed
@@ -1424,15 +1746,15 @@ class LGPresentation:
                     }
                 ]
             subtitle: Optional subtitle text
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        # Accent block + title
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_start = int(y_pos)
 
         if not headers or not row_groups:
             return slide
@@ -1444,22 +1766,14 @@ class LGPresentation:
         total_data_rows = sum(len(g["rows"]) for g in row_groups)
         num_rows = 1 + total_data_rows  # header + data
 
-        y_start = Cm(2.2) if not subtitle else Cm(2.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), Cm(1.8), Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE, color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-
         table_width = sw - int(Cm(2.0))
-        available_h = int(LGDimensions.SLIDE_HEIGHT) - int(y_start) - int(Cm(0.8))
+        available_h = int(LGDimensions.SLIDE_HEIGHT) - y_start - int(Cm(0.8))
         row_h = min(Cm(2.5), available_h // num_rows)
         table_height = row_h * num_rows
 
         table_shape = slide.shapes.add_table(
             num_rows, num_cols,
-            Cm(1.5), int(y_start), table_width, table_height
+            Cm(1.5), y_start, table_width, table_height
         )
         table = table_shape.table
 
@@ -1482,10 +1796,10 @@ class LGPresentation:
 
         # Header row: empty for first 2 cols, then data headers
         self._format_table_cell(table.cell(0, 0), "", is_header=False,
-                                bg_color=LGColors.WHITE)
+                                bg_color=self.colors.WHITE)
         self._set_cell_border(table.cell(0, 0), color="CCCCCC")
         self._format_table_cell(table.cell(0, 1), "", is_header=False,
-                                bg_color=LGColors.WHITE)
+                                bg_color=self.colors.WHITE)
         self._set_cell_border(table.cell(0, 1), color="CCCCCC")
         for c, header in enumerate(headers):
             self._format_table_cell(table.cell(0, 2 + c), header, is_header=True)
@@ -1507,7 +1821,7 @@ class LGPresentation:
                 # Sub-label cell (gray background)
                 self._format_table_cell(
                     table.cell(r, 1), sub_label.replace("\\n", "\n"),
-                    font_size=Pt(9), bold=True, bg_color=LGColors.LIGHT_GRAY,
+                    font_size=Pt(9), bold=True, bg_color=self.colors.LIGHT_GRAY,
                     alignment=PP_ALIGN.CENTER
                 )
                 self._set_cell_border(table.cell(r, 1), color="CCCCCC")
@@ -1518,7 +1832,7 @@ class LGPresentation:
                         self._format_table_cell(
                             table.cell(r, 2 + c), cell_text,
                             font_size=Pt(9), alignment=PP_ALIGN.LEFT,
-                            bg_color=LGColors.WHITE
+                            bg_color=self.colors.WHITE
                         )
                         self._set_cell_border(table.cell(r, 2 + c), color="CCCCCC")
 
@@ -1529,7 +1843,7 @@ class LGPresentation:
                 table.cell(group_start, 0).merge(table.cell(group_end, 0))
             self._format_table_cell(
                 table.cell(group_start, 0), category,
-                font_size=Pt(10), bold=True, bg_color=LGColors.LIGHT_GRAY,
+                font_size=Pt(10), bold=True, bg_color=self.colors.LIGHT_GRAY,
                 alignment=PP_ALIGN.CENTER
             )
             self._set_cell_border(table.cell(group_start, 0), color="CCCCCC")
@@ -1537,7 +1851,8 @@ class LGPresentation:
         return slide
 
     def add_two_column(self, title, section="", left_title="", left_bullets=None,
-                       right_title="", right_bullets=None, subtitle=""):
+                       right_title="", right_bullets=None, subtitle="",
+                       chapter=""):
         """
         Add a two-column layout slide — useful for comparisons, pros/cons,
         before/after, or side-by-side content.
@@ -1550,42 +1865,34 @@ class LGPresentation:
             right_title: Title for right column
             right_bullets: List of bullet strings for right column
             subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(2.2)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), Cm(1.8), Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE, color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-            y_pos = Cm(2.8)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         col_width = (sw - int(Cm(3.5))) // 2
         left_x = Cm(1.5)
         right_x = int(left_x) + col_width + int(Cm(0.5))
         header_h = Cm(1.0)
-        body_h = int(LGDimensions.SLIDE_HEIGHT) - int(y_pos) - int(header_h) - int(Cm(1.5))
+        body_h = int(LGDimensions.SLIDE_HEIGHT) - y_pos - int(header_h) - int(Cm(1.5))
 
         for col_x, col_title, col_bullets in [
             (left_x, left_title, left_bullets or []),
             (right_x, right_title, right_bullets or [])
         ]:
-            # Column header box (CHARCOAL background with white text)
+            # Column header box (DARK_RED background with white text)
             if col_title:
                 hdr_box = slide.shapes.add_shape(
-                    MSO_SHAPE.RECTANGLE,
-                    int(col_x), int(y_pos), col_width, int(header_h)
+                    MSO_SHAPE.ROUNDED_RECTANGLE,
+                    int(col_x), y_pos, col_width, int(header_h)
                 )
                 hdr_box.fill.solid()
-                hdr_box.fill.fore_color.rgb = LGColors.CHARCOAL
+                hdr_box.fill.fore_color.rgb = self.colors.DARK_RED
                 hdr_box.line.fill.background()
                 tf = hdr_box.text_frame
                 tf.clear()
@@ -1598,17 +1905,18 @@ class LGPresentation:
                 run = p.add_run()
                 run.text = col_title
                 self._set_font(run, size=Pt(14), bold=True,
-                              color=LGColors.WHITE)
+                              color=self.colors.WHITE)
 
-            # Column body box (Light gray background with bullets)
-            body_top = int(y_pos) + int(header_h)
+            # Column body box (WHITE background with bullets, rounded)
+            body_top = y_pos + int(header_h)
             body_box = slide.shapes.add_shape(
-                MSO_SHAPE.RECTANGLE,
+                MSO_SHAPE.ROUNDED_RECTANGLE,
                 int(col_x), body_top, col_width, body_h
             )
             body_box.fill.solid()
-            body_box.fill.fore_color.rgb = LGColors.LIGHT_GRAY
-            body_box.line.fill.background()
+            body_box.fill.fore_color.rgb = self.colors.WHITE
+            body_box.line.color.rgb = self.colors.BORDER_GRAY
+            body_box.line.width = Pt(0.5)
 
             tf = body_box.text_frame
             tf.clear()
@@ -1631,13 +1939,880 @@ class LGPresentation:
                     run = p.add_run()
                     run.text = bullet
                     self._set_font(run, size=LGTypography.BODY,
-                                  color=LGColors.BLACK)
+                                  color=self.colors.BLACK)
 
             self._add_shadow(body_box)
 
         return slide
 
-    def add_kpi_cards(self, title, section="", kpis=None, subtitle=""):
+    # ─────────────────────────────────────────
+    # Template-Based Layout Methods
+    # ─────────────────────────────────────────
+
+    def _density_sizes(self, density):
+        """Return body/bullet font sizes for a given density level."""
+        density_map = {
+            "spacious": {"body": LGTypography.BODY_SPACIOUS, "bullet": LGTypography.BULLET_SPACIOUS},
+            "normal":   {"body": LGTypography.BODY, "bullet": LGTypography.BODY},
+            "compact":  {"body": LGTypography.BODY_COMPACT, "bullet": LGTypography.BULLET_COMPACT},
+            "dense":    {"body": LGTypography.BODY_DENSE, "bullet": LGTypography.BULLET_DENSE},
+        }
+        return density_map.get(density, density_map["normal"])
+
+    def _add_title_pill(self, slide, x, y, text, width=None, height=None,
+                        bg_color=None):
+        """
+        Add a DARK_RED title pill badge centered inside a content box.
+        Returns the shape.
+        """
+        w = width or Cm(5.17)
+        h = height or Cm(0.85)
+        pill = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE, int(x), int(y), int(w), int(h)
+        )
+        pill.fill.solid()
+        pill.fill.fore_color.rgb = bg_color or self.colors.DARK_RED
+        pill.line.fill.background()
+        tf = pill.text_frame
+        tf.clear()
+        tf.word_wrap = True
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        tf.margin_left = Cm(0.15)
+        tf.margin_right = Cm(0.15)
+        tf.margin_top = Cm(0.05)
+        tf.margin_bottom = Cm(0.05)
+        p = tf.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        run = p.add_run()
+        run.text = text
+        self._set_font(run, size=Pt(10), bold=True, color=self.colors.WHITE)
+        return pill
+
+    def _add_circle_icon(self, slide, x, y, icon_text, size=None,
+                         bg_color=None, text_color=None):
+        """
+        Add a circle icon shape with centered text.
+        Default: LG RED background with white text.
+        Returns the shape.
+        """
+        s = size or Cm(2.95)
+        bg = bg_color or self.colors.RED
+        txt_clr = text_color or self.colors.WHITE
+        circle = slide.shapes.add_shape(
+            MSO_SHAPE.OVAL, int(x), int(y), int(s), int(s)
+        )
+        circle.fill.solid()
+        circle.fill.fore_color.rgb = bg
+        circle.line.fill.background()
+        tf = circle.text_frame
+        tf.word_wrap = True
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        p = tf.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        run = p.add_run()
+        run.text = icon_text or ""
+        self._set_font(run, size=Pt(24), bold=True, color=txt_clr)
+        return circle
+
+    def _add_bullets_to_frame(self, tf, bullets, font_size=None, start_index=0):
+        """Add bullet items to an existing text frame."""
+        sz = font_size or LGTypography.BODY
+        for j, bullet in enumerate(bullets):
+            idx = start_index + j
+            p = tf.paragraphs[0] if idx == 0 and tf.paragraphs[0].text == '' else tf.add_paragraph()
+            p.alignment = PP_ALIGN.LEFT
+            p.space_after = Pt(3)
+            pPr = p._p.get_or_add_pPr()
+            buChar = _make_oxml_element('a:buChar')
+            buChar.set('char', '\u2022')
+            pPr.append(buChar)
+            pPr.set('marL', str(int(Cm(0.5))))
+            pPr.set('indent', str(int(Cm(-0.4))))
+            run = p.add_run()
+            run.text = bullet
+            self._set_font(run, size=sz, color=self.colors.BLACK)
+
+    def _add_item_pill(self, slide, x, y, text, width=None, height=None):
+        """Add a small rounded item pill (LIGHT_GRAY bg, BORDER_GRAY border)."""
+        w = width or Cm(6.37)
+        h = height or Cm(0.85)
+        pill = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE, int(x), int(y), int(w), int(h)
+        )
+        pill.fill.solid()
+        pill.fill.fore_color.rgb = self.colors.LIGHT_GRAY
+        pill.line.color.rgb = self.colors.BORDER_GRAY
+        pill.line.width = Pt(1)
+        tf = pill.text_frame
+        tf.clear()
+        tf.word_wrap = True
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        tf.margin_left = Cm(0.2)
+        tf.margin_right = Cm(0.2)
+        p = tf.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        run = p.add_run()
+        run.text = text
+        self._set_font(run, size=Pt(10), color=self.colors.BLACK)
+        return pill
+
+    # ── 1. Multi-Column Layout ──
+
+    def add_multi_column(self, title, section="", columns=None, ratio=None,
+                         subtitle="", chapter="", density="normal"):
+        """
+        Flexible multi-column layout with rounded content boxes.
+        Replaces/supplements existing two_column for N-column layouts.
+
+        Args:
+            title: Slide title
+            section: Section name for top-right tag
+            columns: list of dicts, each with:
+                - title (str): column header (shown as pill badge)
+                - bullets (list[str]): bullet items
+                - body (str): plain text body (alternative to bullets)
+            ratio: column width ratios, e.g. [7,3] or [3,7] or [1,1,1] or [1,1,1,1]
+                   defaults to equal widths
+            subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
+            density: "spacious" | "normal" | "compact" | "dense"
+        """
+        slide = self._get_blank_slide()
+        columns = columns or []
+        n_cols = len(columns) if columns else 1
+        sizes = self._density_sizes(density)
+
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
+
+        # Content area dimensions
+        content_left = int(Cm(1.33))
+        content_width = int(Cm(31.16))
+        content_height = int(Cm(11.22))
+        gap = int(Cm(0.35))
+
+        # Calculate column widths from ratio
+        if ratio and len(ratio) == n_cols:
+            total_ratio = sum(ratio)
+            available = content_width - gap * (n_cols - 1)
+            col_widths = [int(available * r / total_ratio) for r in ratio]
+        else:
+            available = content_width - gap * (n_cols - 1)
+            col_widths = [int(available / n_cols)] * n_cols
+
+        # Draw columns
+        x_cursor = content_left
+        for i, col in enumerate(columns):
+            col_w = col_widths[i] if i < len(col_widths) else col_widths[-1]
+            col_title = col.get("title", "")
+            col_bullets = col.get("bullets", [])
+            col_body = col.get("body", "")
+
+            # Rounded content box — subtle fill + shadow for depth (no border)
+            box = slide.shapes.add_shape(
+                MSO_SHAPE.ROUNDED_RECTANGLE,
+                x_cursor, y_pos, col_w, content_height
+            )
+            box.fill.solid()
+            box.fill.fore_color.rgb = self.colors.LIGHT_GRAY
+            box.line.fill.background()
+            # Set corner radius (template: val 8000)
+            _spPr = box._element.spPr
+            _pg = _spPr.find(qn('a:prstGeom'))
+            if _pg is not None:
+                _al = _pg.find(qn('a:avLst'))
+                if _al is None:
+                    _al = _make_oxml_element('a:avLst')
+                    _pg.append(_al)
+                for _gd in _al.findall(qn('a:gd')):
+                    _al.remove(_gd)
+                _gd = _make_oxml_element('a:gd')
+                _gd.set('name', 'adj')
+                _gd.set('fmla', 'val 8000')
+                _al.append(_gd)
+
+            self._add_shadow(box, shadow_type="card")
+
+            # Title pill inside box (centered horizontally)
+            inner_y = y_pos + int(Cm(0.70))
+            if col_title:
+                pill_w = min(int(Cm(5.17)), col_w - int(Cm(0.60)))
+                pill_x = x_cursor + (col_w - pill_w) // 2
+                self._add_title_pill(slide, pill_x, inner_y, col_title,
+                                     width=pill_w)
+                text_top = inner_y + int(Cm(1.10))
+            else:
+                text_top = inner_y
+
+            # Content: bullets or body text
+            text_h = content_height - (text_top - y_pos) - int(Cm(0.40))
+            text_w = col_w - int(Cm(0.80))
+            text_x = x_cursor + int(Cm(0.40))
+
+            if col_bullets:
+                tb = slide.shapes.add_textbox(text_x, text_top, text_w, text_h)
+                tf = tb.text_frame
+                tf.word_wrap = True
+                tb.fill.background()
+                tb.line.fill.background()
+                self._add_bullets_to_frame(tf, col_bullets,
+                                           font_size=sizes["bullet"])
+            elif col_body:
+                self._add_textbox(
+                    slide, text_x, text_top, text_w, text_h,
+                    text=col_body, size=sizes["body"], color=self.colors.BLACK
+                )
+
+            x_cursor += col_w + gap
+
+        return slide
+
+    # ── 2. Card Grid Layout ──
+
+    def add_card_grid(self, title, section="", cards=None, cols=2,
+                      subtitle="", chapter="", show_icon=True,
+                      density="normal"):
+        """
+        Grid of titled card panels with optional icon circles.
+
+        Args:
+            title: Slide title
+            section: Section name for top-right tag
+            cards: list of dicts, each with:
+                - title (str): card header (pill badge)
+                - items (list[str]): list items inside card
+                - icon_text (str): text inside circle icon (1-2 chars)
+                - footer (str): footer text at bottom of card
+            cols: number of columns (2, 3, or 4)
+            show_icon: whether to show circle icons (default True)
+            subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
+            density: "spacious" | "normal" | "compact" | "dense"
+        """
+        slide = self._get_blank_slide()
+        cards = cards or []
+        sizes = self._density_sizes(density)
+
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
+
+        # Content area
+        content_left = int(Cm(1.33))
+        content_width = int(Cm(31.16))
+        content_height = int(Cm(11.22))
+        gap = int(Cm(0.50))
+
+        # Column widths
+        cols = max(1, min(cols, 6))
+        col_w = (content_width - gap * (cols - 1)) // cols
+
+        # Arrange cards into rows
+        for idx, card in enumerate(cards):
+            col_idx = idx % cols
+            row_idx = idx // cols
+            row_h = content_height  # single row for simplicity
+            if len(cards) > cols:
+                row_h = (content_height - gap * ((len(cards) - 1) // cols)) // (((len(cards) - 1) // cols) + 1)
+
+            card_x = content_left + col_idx * (col_w + gap)
+            card_y = y_pos + row_idx * (row_h + gap)
+            card_h = min(row_h, content_height - (card_y - y_pos))
+
+            card_title = card.get("title", "")
+            card_items = card.get("items", [])
+            card_icon = card.get("icon_text", "")
+            card_footer = card.get("footer", "")
+
+            # Card background box
+            box = slide.shapes.add_shape(
+                MSO_SHAPE.ROUNDED_RECTANGLE,
+                card_x, card_y, col_w, card_h
+            )
+            box.fill.solid()
+            box.fill.fore_color.rgb = self.colors.WHITE
+            box.line.color.rgb = self.colors.RED
+            box.line.width = Pt(1)
+            # Set corner radius (template: val 8000)
+            _spPr = box._element.spPr
+            _pg = _spPr.find(qn('a:prstGeom'))
+            if _pg is not None:
+                _al = _pg.find(qn('a:avLst'))
+                if _al is None:
+                    _al = _make_oxml_element('a:avLst')
+                    _pg.append(_al)
+                for _gd in _al.findall(qn('a:gd')):
+                    _al.remove(_gd)
+                _gd = _make_oxml_element('a:gd')
+                _gd.set('name', 'adj')
+                _gd.set('fmla', 'val 8000')
+                _al.append(_gd)
+
+            self._add_shadow(box)
+
+            inner_y = card_y + int(Cm(0.70))
+
+            # Title pill
+            if card_title:
+                pill_w = min(int(Cm(5.17)), col_w - int(Cm(0.60)))
+                pill_x = card_x + (col_w - pill_w) // 2
+                self._add_title_pill(slide, pill_x, inner_y, card_title,
+                                     width=pill_w)
+                inner_y += int(Cm(1.10))
+
+            # Circle icon
+            if show_icon and card_icon:
+                icon_size = int(Cm(2.95))
+                icon_x = card_x + (col_w - icon_size) // 2
+                self._add_circle_icon(slide, icon_x, inner_y, card_icon)
+                inner_y += icon_size + int(Cm(0.40))
+
+            # Item pills (stacked)
+            if card_items:
+                item_w = col_w - int(Cm(1.00))
+                item_x = card_x + (col_w - item_w) // 2
+                for item_text in card_items:
+                    if inner_y + int(Cm(0.85)) > card_y + card_h - int(Cm(0.80)):
+                        break  # prevent overflow
+                    self._add_item_pill(slide, item_x, inner_y, item_text,
+                                        width=item_w)
+                    inner_y += int(Cm(1.05))
+
+            # Footer text
+            if card_footer:
+                footer_y = card_y + card_h - int(Cm(0.90))
+                footer_w = col_w - int(Cm(0.60))
+                footer_x = card_x + int(Cm(0.30))
+                self._add_textbox(
+                    slide, footer_x, footer_y, footer_w, Cm(0.70),
+                    text=card_footer, size=Pt(9), bold=True,
+                    color=self.colors.RED, alignment=PP_ALIGN.CENTER
+                )
+
+        return slide
+
+    # ── 3. Content Sidebar Layout ──
+
+    def add_content_sidebar(self, title, section="", main_body="",
+                            main_bullets=None, sidebar_items=None,
+                            subtitle="", chapter="", sidebar_position="right",
+                            sidebar_ratio=0.48, density="normal"):
+        """
+        Main content area with stacked sidebar panels.
+
+        Args:
+            title: Slide title
+            section: Section name for top-right tag
+            main_body: Body text for main area
+            main_bullets: Bullet list for main area
+            sidebar_items: list of dicts for sidebar panels:
+                - title (str): panel header
+                - body (str): panel content text
+                - bullets (list[str]): panel bullet items
+            sidebar_position: "right" or "left"
+            sidebar_ratio: sidebar width as fraction of total (default 0.48)
+            subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
+            density: "spacious" | "normal" | "compact" | "dense"
+        """
+        slide = self._get_blank_slide()
+        sidebar_items = sidebar_items or []
+        sizes = self._density_sizes(density)
+
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
+
+        # Content area
+        content_left = int(Cm(1.33))
+        content_width = int(Cm(31.16))
+        content_height = int(Cm(11.22))
+        gap = int(Cm(0.50))
+
+        sidebar_w = int(content_width * sidebar_ratio)
+        main_w = content_width - sidebar_w - gap
+
+        if sidebar_position == "left":
+            sidebar_x = content_left
+            main_x = content_left + sidebar_w + gap
+        else:
+            main_x = content_left
+            sidebar_x = content_left + main_w + gap
+
+        # Main content box
+        main_box = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE,
+            main_x, y_pos, main_w, content_height
+        )
+        main_box.fill.solid()
+        main_box.fill.fore_color.rgb = self.colors.WHITE
+        main_box.line.color.rgb = self.colors.RED
+        main_box.line.width = Pt(1)
+        # Set corner radius (template: val 8000)
+        _spPr = main_box._element.spPr
+        _pg = _spPr.find(qn('a:prstGeom'))
+        if _pg is not None:
+            _al = _pg.find(qn('a:avLst'))
+            if _al is None:
+                _al = _make_oxml_element('a:avLst')
+                _pg.append(_al)
+            for _gd in _al.findall(qn('a:gd')):
+                _al.remove(_gd)
+            _gd = _make_oxml_element('a:gd')
+            _gd.set('name', 'adj')
+            _gd.set('fmla', 'val 8000')
+            _al.append(_gd)
+
+        self._add_shadow(main_box)
+
+        # Main content text
+        text_x = main_x + int(Cm(0.50))
+        text_y = y_pos + int(Cm(0.50))
+        text_w = main_w - int(Cm(1.00))
+        text_h = content_height - int(Cm(1.00))
+
+        if main_bullets:
+            tb = slide.shapes.add_textbox(text_x, text_y, text_w, text_h)
+            tf = tb.text_frame
+            tf.word_wrap = True
+            tb.fill.background()
+            tb.line.fill.background()
+            self._add_bullets_to_frame(tf, main_bullets,
+                                       font_size=sizes["bullet"])
+        elif main_body:
+            self._add_textbox(
+                slide, text_x, text_y, text_w, text_h,
+                text=main_body, size=sizes["body"], color=self.colors.BLACK
+            )
+
+        # Sidebar panels (stacked vertically)
+        n_panels = max(len(sidebar_items), 1)
+        panel_gap = int(Cm(0.50))
+        total_gaps = panel_gap * (n_panels - 1)
+        panel_h = (content_height - total_gaps) // n_panels
+
+        panel_y = y_pos
+        for panel in sidebar_items:
+            panel_title = panel.get("title", "")
+            panel_body = panel.get("body", "")
+            panel_bullets = panel.get("bullets", [])
+
+            # Panel box
+            pbox = slide.shapes.add_shape(
+                MSO_SHAPE.ROUNDED_RECTANGLE,
+                sidebar_x, panel_y, sidebar_w, panel_h
+            )
+            pbox.fill.solid()
+            pbox.fill.fore_color.rgb = self.colors.WHITE
+            pbox.line.color.rgb = self.colors.RED
+            pbox.line.width = Pt(1)
+            # Set corner radius (template: val 8000)
+            _spPr = pbox._element.spPr
+            _pg = _spPr.find(qn('a:prstGeom'))
+            if _pg is not None:
+                _al = _pg.find(qn('a:avLst'))
+                if _al is None:
+                    _al = _make_oxml_element('a:avLst')
+                    _pg.append(_al)
+                for _gd in _al.findall(qn('a:gd')):
+                    _al.remove(_gd)
+                _gd = _make_oxml_element('a:gd')
+                _gd.set('name', 'adj')
+                _gd.set('fmla', 'val 8000')
+                _al.append(_gd)
+
+            self._add_shadow(pbox)
+
+            inner_y = panel_y + int(Cm(0.40))
+            inner_x = sidebar_x + int(Cm(0.40))
+            inner_w = sidebar_w - int(Cm(0.80))
+
+            # Panel title (bold text at top)
+            if panel_title:
+                self._add_textbox(
+                    slide, inner_x, inner_y, inner_w, Cm(0.70),
+                    text=panel_title, size=Pt(12), bold=True,
+                    color=self.colors.BLACK
+                )
+                inner_y += int(Cm(0.80))
+
+            # Panel body or bullets
+            remaining_h = panel_h - (inner_y - panel_y) - int(Cm(0.20))
+            if panel_bullets:
+                tb = slide.shapes.add_textbox(inner_x, inner_y,
+                                              inner_w, remaining_h)
+                tf = tb.text_frame
+                tf.word_wrap = True
+                tb.fill.background()
+                tb.line.fill.background()
+                self._add_bullets_to_frame(tf, panel_bullets,
+                                           font_size=sizes["bullet"])
+            elif panel_body:
+                self._add_textbox(
+                    slide, inner_x, inner_y, inner_w, remaining_h,
+                    text=panel_body, size=sizes["body"],
+                    color=self.colors.BLACK
+                )
+
+            panel_y += panel_h + panel_gap
+
+        return slide
+
+    # ── 4. Titled Columns Layout ──
+
+    def add_titled_columns(self, title, section="", bar_title="",
+                           columns=None, subtitle="", chapter="",
+                           show_bar=True, density="normal"):
+        """
+        Full-width title bar with columns below.
+
+        Args:
+            title: Slide title
+            section: Section name for top-right tag
+            bar_title: text for the full-width title bar
+            columns: list of dicts:
+                - title (str): column header (pill badge)
+                - icon_text (str): text in circle icon
+                - bullets (list[str]): bullet items
+                - items (list[str]): bottom item pills
+            show_bar: whether to show the full-width title bar (default True)
+            subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
+            density: "spacious" | "normal" | "compact" | "dense"
+        """
+        slide = self._get_blank_slide()
+        columns = columns or []
+        n_cols = len(columns) if columns else 1
+        sizes = self._density_sizes(density)
+
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
+
+        # Content area
+        content_left = int(Cm(1.33))
+        content_width = int(Cm(31.16))
+        bar_height = int(Cm(1.07))
+        gap = int(Cm(0.40))
+
+        # Title bar
+        if show_bar and bar_title:
+            bar_box = slide.shapes.add_shape(
+                MSO_SHAPE.ROUNDED_RECTANGLE,
+                content_left, y_pos, content_width, bar_height
+            )
+            bar_box.fill.solid()
+            bar_box.fill.fore_color.rgb = self.colors.WHITE
+            bar_box.line.color.rgb = self.colors.RED
+            bar_box.line.width = Pt(1)
+            # Set corner radius (template: val 8000)
+            _spPr = bar_box._element.spPr
+            _pg = _spPr.find(qn('a:prstGeom'))
+            if _pg is not None:
+                _al = _pg.find(qn('a:avLst'))
+                if _al is None:
+                    _al = _make_oxml_element('a:avLst')
+                    _pg.append(_al)
+                for _gd in _al.findall(qn('a:gd')):
+                    _al.remove(_gd)
+                _gd = _make_oxml_element('a:gd')
+                _gd.set('name', 'adj')
+                _gd.set('fmla', 'val 8000')
+                _al.append(_gd)
+
+            self._add_shadow(bar_box)
+
+            tf = bar_box.text_frame
+            tf.clear()
+            tf.word_wrap = True
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            tf.margin_left = Cm(0.4)
+            p = tf.paragraphs[0]
+            p.alignment = PP_ALIGN.CENTER
+            run = p.add_run()
+            run.text = bar_title
+            self._set_font(run, size=Pt(12), bold=True, color=self.colors.BLACK)
+
+            col_top = y_pos + bar_height + gap
+        else:
+            col_top = y_pos
+
+        # Column area height
+        content_bottom = y_pos + int(Cm(11.22))
+        col_height = content_bottom - col_top
+        col_gap = int(Cm(0.50))
+        col_w = (content_width - col_gap * (n_cols - 1)) // n_cols
+
+        # Draw columns
+        x_cursor = content_left
+        for col in columns:
+            col_title = col.get("title", "")
+            col_icon = col.get("icon_text", "")
+            col_bullets = col.get("bullets", [])
+            col_items = col.get("items", [])
+
+            # Column background box
+            box = slide.shapes.add_shape(
+                MSO_SHAPE.ROUNDED_RECTANGLE,
+                x_cursor, col_top, col_w, col_height
+            )
+            box.fill.solid()
+            box.fill.fore_color.rgb = self.colors.WHITE
+            box.line.color.rgb = self.colors.RED
+            box.line.width = Pt(1)
+            # Set corner radius (template: val 8000)
+            _spPr = box._element.spPr
+            _pg = _spPr.find(qn('a:prstGeom'))
+            if _pg is not None:
+                _al = _pg.find(qn('a:avLst'))
+                if _al is None:
+                    _al = _make_oxml_element('a:avLst')
+                    _pg.append(_al)
+                for _gd in _al.findall(qn('a:gd')):
+                    _al.remove(_gd)
+                _gd = _make_oxml_element('a:gd')
+                _gd.set('name', 'adj')
+                _gd.set('fmla', 'val 8000')
+                _al.append(_gd)
+
+            self._add_shadow(box)
+
+            inner_y = col_top + int(Cm(0.70))
+
+            # Title pill
+            if col_title:
+                pill_w = min(int(Cm(5.17)), col_w - int(Cm(0.60)))
+                pill_x = x_cursor + (col_w - pill_w) // 2
+                self._add_title_pill(slide, pill_x, inner_y, col_title,
+                                     width=pill_w)
+                inner_y += int(Cm(1.10))
+
+            # Circle icon
+            if col_icon:
+                icon_size = int(Cm(2.95))
+                icon_x = x_cursor + (col_w - icon_size) // 2
+                self._add_circle_icon(slide, icon_x, inner_y, col_icon)
+                inner_y += icon_size + int(Cm(0.40))
+
+            # Bullets
+            if col_bullets:
+                bullet_h = col_height - (inner_y - col_top) - int(Cm(0.50))
+                if col_items:
+                    bullet_h -= int(Cm(1.10)) * len(col_items)
+                bullet_w = col_w - int(Cm(0.80))
+                bullet_x = x_cursor + int(Cm(0.40))
+                tb = slide.shapes.add_textbox(bullet_x, inner_y,
+                                              bullet_w, max(bullet_h, int(Cm(1.0))))
+                tf = tb.text_frame
+                tf.word_wrap = True
+                tb.fill.background()
+                tb.line.fill.background()
+                self._add_bullets_to_frame(tf, col_bullets,
+                                           font_size=sizes["bullet"])
+                inner_y += max(bullet_h, int(Cm(1.0)))
+
+            # Bottom item pills
+            if col_items:
+                item_w = col_w - int(Cm(1.00))
+                item_x = x_cursor + (col_w - item_w) // 2
+                # Position items from the bottom of the column
+                items_start = col_top + col_height - int(Cm(0.50)) - int(Cm(1.05)) * len(col_items)
+                pill_y = max(inner_y, items_start)
+                for item_text in col_items:
+                    if pill_y + int(Cm(0.85)) > col_top + col_height:
+                        break
+                    self._add_item_pill(slide, item_x, pill_y, item_text,
+                                        width=item_w)
+                    pill_y += int(Cm(1.05))
+
+            x_cursor += col_w + col_gap
+
+        return slide
+
+    # ── 5. Icon Process Layout ──
+
+    def add_icon_process(self, title, section="", steps=None,
+                         bottom_sections=None, subtitle="", chapter="",
+                         density="normal"):
+        """
+        Process flow with icon groups on top and detail sections below.
+
+        Args:
+            title: Slide title
+            section: Section name for top-right tag
+            steps: list of dicts for top process:
+                - title (str): step name (bold)
+                - description (str): step description
+                - icon_text (str): icon circle text (1-2 chars)
+            bottom_sections: list of dicts for bottom detail panels:
+                - title (str): section header (pill badge)
+                - items (list of dicts with 'label' and 'value')
+                - bullets (list[str]): alternative to items
+            subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
+            density: "spacious" | "normal" | "compact" | "dense"
+        """
+        slide = self._get_blank_slide()
+        steps = steps or []
+        bottom_sections = bottom_sections or []
+        sizes = self._density_sizes(density)
+
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
+
+        # Content area
+        content_left = int(Cm(1.33))
+        content_width = int(Cm(31.16))
+        content_height = int(Cm(11.22))
+
+        # Top process area: ~6.5cm, bottom detail area: ~4.0cm
+        top_height = int(Cm(6.50))
+        bottom_gap = int(Cm(0.50))
+        bottom_top = y_pos + top_height + bottom_gap
+        bottom_height = content_height - top_height - bottom_gap
+
+        # ── Top: Icon steps with arrows ──
+        n_steps = max(len(steps), 1)
+        icon_size = int(Cm(2.95))
+        arrow_w = int(Cm(1.20))
+
+        # Space available for steps (icons + arrows between)
+        total_arrows = max(n_steps - 1, 0)
+        total_arrow_space = total_arrows * arrow_w
+        step_space = (content_width - total_arrow_space) // n_steps
+
+        for i, step in enumerate(steps):
+            step_title = step.get("title", "")
+            step_desc = step.get("description", "")
+            step_icon = step.get("icon_text", "")
+
+            step_x = content_left + i * (step_space + arrow_w)
+            step_center = step_x + step_space // 2
+
+            # Circle icon (centered in step area)
+            icon_x = step_center - icon_size // 2
+            icon_y = y_pos + int(Cm(0.30))
+            self._add_circle_icon(slide, icon_x, icon_y, step_icon)
+
+            # Title below icon
+            title_y = icon_y + icon_size + int(Cm(0.30))
+            self._add_textbox(
+                slide, step_x, title_y, step_space, Cm(0.70),
+                text=step_title, size=Pt(11), bold=True,
+                color=self.colors.BLACK, alignment=PP_ALIGN.CENTER
+            )
+
+            # Description below title
+            if step_desc:
+                desc_y = title_y + int(Cm(0.80))
+                self._add_textbox(
+                    slide, step_x, desc_y, step_space, Cm(1.50),
+                    text=step_desc, size=sizes["body"],
+                    color=self.colors.DARK_GRAY, alignment=PP_ALIGN.CENTER
+                )
+
+            # Arrow between steps (chevron triangle)
+            if i < n_steps - 1:
+                arrow_x = step_x + step_space
+                arrow_y = icon_y + icon_size // 2 - int(Cm(0.40))
+                arrow = slide.shapes.add_shape(
+                    MSO_SHAPE.CHEVRON,
+                    arrow_x, arrow_y, arrow_w, int(Cm(0.80))
+                )
+                arrow.fill.solid()
+                arrow.fill.fore_color.rgb = self.colors.RED
+                arrow.line.fill.background()
+
+        # ── Bottom: Detail panels ──
+        if bottom_sections:
+            n_panels = len(bottom_sections)
+            panel_gap = int(Cm(0.50))
+            panel_w = (content_width - panel_gap * (n_panels - 1)) // n_panels
+
+            panel_x = content_left
+            for panel in bottom_sections:
+                panel_title = panel.get("title", "")
+                panel_items = panel.get("items", [])
+                panel_bullets = panel.get("bullets", [])
+
+                # Panel background box
+                pbox = slide.shapes.add_shape(
+                    MSO_SHAPE.ROUNDED_RECTANGLE,
+                    panel_x, bottom_top, panel_w, bottom_height
+                )
+                pbox.fill.solid()
+                pbox.fill.fore_color.rgb = self.colors.WHITE
+                pbox.line.color.rgb = self.colors.RED
+                pbox.line.width = Pt(1)
+                # Set corner radius (template: val 8000)
+                _spPr = pbox._element.spPr
+                _pg = _spPr.find(qn('a:prstGeom'))
+                if _pg is not None:
+                    _al = _pg.find(qn('a:avLst'))
+                    if _al is None:
+                        _al = _make_oxml_element('a:avLst')
+                        _pg.append(_al)
+                    for _gd in _al.findall(qn('a:gd')):
+                        _al.remove(_gd)
+                    _gd = _make_oxml_element('a:gd')
+                    _gd.set('name', 'adj')
+                    _gd.set('fmla', 'val 8000')
+                    _al.append(_gd)
+
+                self._add_shadow(pbox)
+
+                inner_y = bottom_top + int(Cm(0.50))
+
+                # Panel title pill
+                if panel_title:
+                    pill_w = min(int(Cm(5.17)), panel_w - int(Cm(0.60)))
+                    pill_x = panel_x + (panel_w - pill_w) // 2
+                    self._add_title_pill(slide, pill_x, inner_y, panel_title,
+                                         width=pill_w)
+                    inner_y += int(Cm(1.10))
+
+                # Items (label: value pairs)
+                if panel_items:
+                    item_x = panel_x + int(Cm(0.50))
+                    item_w = panel_w - int(Cm(1.00))
+                    for item in panel_items:
+                        label = item.get("label", "")
+                        value = item.get("value", "")
+                        display = f"{label}: {value}" if label and value else label or value
+                        self._add_textbox(
+                            slide, item_x, inner_y, item_w, Cm(0.60),
+                            text=display, size=sizes["body"],
+                            color=self.colors.BLACK
+                        )
+                        inner_y += int(Cm(0.65))
+
+                # Bullets alternative
+                elif panel_bullets:
+                    remaining_h = bottom_height - (inner_y - bottom_top) - int(Cm(0.20))
+                    tb = slide.shapes.add_textbox(
+                        panel_x + int(Cm(0.50)), inner_y,
+                        panel_w - int(Cm(1.00)), remaining_h
+                    )
+                    tf = tb.text_frame
+                    tf.word_wrap = True
+                    tb.fill.background()
+                    tb.line.fill.background()
+                    self._add_bullets_to_frame(tf, panel_bullets,
+                                               font_size=sizes["bullet"])
+
+                panel_x += panel_w + panel_gap
+
+        return slide
+
+    def add_kpi_cards(self, title, section="", kpis=None, subtitle="",
+                      chapter=""):
         """
         Add a KPI/metrics card slide — large numbers with labels,
         commonly used in executive summaries and dashboards.
@@ -1652,27 +2827,21 @@ class LGPresentation:
                     {"value": "2.5억", "label": "연간 비용 절감", "color": "#1565C0"},
                 ]
             subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         if not kpis:
             return slide
 
-        y_pos = Cm(3.0)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), Cm(1.8), Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE, color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-            y_pos = Cm(3.5)
+        y_pos += int(Cm(0.3))
 
         num_cards = len(kpis)
         card_gap = Cm(0.3)
@@ -1684,10 +2853,10 @@ class LGPresentation:
         for i, kpi in enumerate(kpis):
             x = int(x_start) + i * (card_width + int(card_gap))
 
-            # Card background
+            # Card background (WHITE rounded rectangle)
             card = self.add_box(
-                slide, x, int(y_pos), card_width, card_height,
-                bg_color=LGColors.LIGHT_GRAY
+                slide, x, y_pos, card_width, card_height,
+                bg_color=self.colors.WHITE, rounded=True
             )
 
             # Value (large number)
@@ -1696,10 +2865,10 @@ class LGPresentation:
                 r, g, b = int(value_color_hex[1:3], 16), int(value_color_hex[3:5], 16), int(value_color_hex[5:7], 16)
                 v_color = RGBColor(r, g, b)
             else:
-                v_color = LGColors.RED
+                v_color = self.colors.RED
 
             self._add_textbox(
-                slide, x + Cm(0.5), int(y_pos) + Cm(1.5),
+                slide, x + Cm(0.5), y_pos + int(Cm(1.5)),
                 card_width - Cm(1.0), Cm(3.5),
                 text=kpi.get("value", ""),
                 size=Pt(40), bold=True, color=v_color,
@@ -1709,17 +2878,18 @@ class LGPresentation:
 
             # Label
             self._add_textbox(
-                slide, x + Cm(0.5), int(y_pos) + Cm(5.5),
+                slide, x + Cm(0.5), y_pos + int(Cm(5.5)),
                 card_width - Cm(1.0), Cm(2.0),
                 text=kpi.get("label", ""),
-                size=LGTypography.BODY, color=LGColors.DARK_GRAY,
+                size=LGTypography.BODY, color=self.colors.DARK_GRAY,
                 alignment=PP_ALIGN.CENTER,
                 vertical=MSO_ANCHOR.TOP
             )
 
         return slide
 
-    def add_timeline(self, title, section="", milestones=None, subtitle=""):
+    def add_timeline(self, title, section="", milestones=None, subtitle="",
+                     chapter=""):
         """
         Add a horizontal timeline slide — useful for project phases,
         history, or sequential milestones.
@@ -1733,36 +2903,28 @@ class LGPresentation:
                     {"date": "2025 Q2", "title": "Phase 2", "description": "설명"},
                 ]
             subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         if not milestones:
             return slide
 
-        y_pos = Cm(2.2)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), Cm(1.8), Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE, color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-            y_pos = Cm(2.8)
-
         num = len(milestones)
-        line_y = int(y_pos) + int(Cm(4.0))
+        line_y = y_pos + int(Cm(4.0))
         margin_x = Cm(1.5)
         line_width = sw - int(margin_x) * 2
 
         # Horizontal line
         self._add_horizontal_line(
             slide, margin_x, line_y, line_width,
-            color=LGColors.CHARCOAL, height=Pt(3)
+            color=self.colors.CHARCOAL, height=Pt(3)
         )
 
         # Milestones
@@ -1778,7 +2940,7 @@ class LGPresentation:
                 dot_size, dot_size
             )
             dot.fill.solid()
-            dot.fill.fore_color.rgb = LGColors.RED
+            dot.fill.fore_color.rgb = self.colors.RED
             dot.line.fill.background()
 
             # Date above line
@@ -1786,7 +2948,7 @@ class LGPresentation:
                 slide, cx - spacing // 2, line_y - Cm(2.5),
                 spacing, Cm(2.0),
                 text=ms.get("date", ""),
-                size=Pt(11), bold=True, color=LGColors.RED,
+                size=Pt(11), bold=True, color=self.colors.RED,
                 alignment=PP_ALIGN.CENTER,
                 vertical=MSO_ANCHOR.BOTTOM
             )
@@ -1796,7 +2958,7 @@ class LGPresentation:
                 slide, cx - spacing // 2, line_y + Cm(1.0),
                 spacing, Cm(1.5),
                 text=ms.get("title", ""),
-                size=LGTypography.BODY, bold=True, color=LGColors.BLACK,
+                size=LGTypography.BODY, bold=True, color=self.colors.BLACK,
                 alignment=PP_ALIGN.CENTER
             )
 
@@ -1805,13 +2967,14 @@ class LGPresentation:
                     slide, cx - spacing // 2, line_y + Cm(2.5),
                     spacing, Cm(4.0),
                     text=ms["description"],
-                    size=LGTypography.BODY_SMALL, color=LGColors.DARK_GRAY,
+                    size=LGTypography.BODY_SMALL, color=self.colors.DARK_GRAY,
                     alignment=PP_ALIGN.CENTER
                 )
 
         return slide
 
-    def add_process_flow(self, title, section="", steps=None, subtitle=""):
+    def add_process_flow(self, title, section="", steps=None, subtitle="",
+                         chapter=""):
         """
         Add a process flow slide — horizontal arrow-connected steps.
         Good for workflows, system architecture overview, or methodology.
@@ -1827,26 +2990,18 @@ class LGPresentation:
                     {"title": "대시보드", "items": ["시각화", "알림"]},
                 ]
             subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         if not steps:
             return slide
-
-        y_pos = Cm(2.2)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), Cm(1.8), Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE, color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-            y_pos = Cm(2.8)
 
         num = len(steps)
         arrow_width = Cm(0.8)
@@ -1867,15 +3022,15 @@ class LGPresentation:
                 box_x = int(x_start) + i * (step_width + int(arrow_width))
 
                 header = self.add_box(
-                    slide, box_x, int(y_pos), step_width, Cm(1.2),
+                    slide, box_x, y_pos, step_width, Cm(1.2),
                     text=step.get("title", ""),
-                    bg_color=LGColors.CHARCOAL, text_color=LGColors.WHITE,
-                    font_size=LGTypography.BODY, bold=True
+                    bg_color=self.colors.DARK_RED, text_color=self.colors.WHITE,
+                    font_size=LGTypography.BODY, bold=True, rounded=True
                 )
                 content = self.add_box(
-                    slide, box_x, int(y_pos) + int(Cm(1.2)),
+                    slide, box_x, y_pos + int(Cm(1.2)),
                     step_width, step_height - Cm(1.2),
-                    bg_color=LGColors.LIGHT_GRAY
+                    bg_color=self.colors.WHITE, rounded=True
                 )
 
                 items = step.get("items", [])
@@ -1884,7 +3039,7 @@ class LGPresentation:
                     items = [line.strip() for line in desc.split("\n") if line.strip()]
                 if items:
                     items_box = slide.shapes.add_textbox(
-                        box_x + Cm(0.3), int(y_pos) + int(Cm(1.6)),
+                        box_x + Cm(0.3), y_pos + int(Cm(1.6)),
                         step_width - Cm(0.6), step_height - Cm(2.0)
                     )
                     tf = items_box.text_frame
@@ -1901,33 +3056,33 @@ class LGPresentation:
                         run = p.add_run()
                         run.text = item
                         self._set_font(run, size=LGTypography.BODY_SMALL,
-                                      color=LGColors.BLACK)
+                                      color=self.colors.BLACK)
 
                 if i < row1_count - 1:
                     arrow_x = box_x + step_width
-                    arrow_y = int(y_pos) + int(step_height) // 2 - int(Cm(0.5))
+                    arrow_y = y_pos + int(step_height) // 2 - int(Cm(0.5))
                     arrow = slide.shapes.add_shape(
                         MSO_SHAPE.RIGHT_ARROW,
                         arrow_x, arrow_y, arrow_width, Cm(1.0)
                     )
                     arrow.fill.solid()
-                    arrow.fill.fore_color.rgb = LGColors.CHARCOAL
+                    arrow.fill.fore_color.rgb = self.colors.RED
                     arrow.line.fill.background()
 
             # Down arrow from last in row1 to first in row2
             last_r1_x = int(x_start) + (row1_count - 1) * (step_width + int(arrow_width))
             down_arrow_x = last_r1_x + step_width // 2 - int(Cm(0.5))
-            down_arrow_y = int(y_pos) + int(step_height)
+            down_arrow_y = y_pos + int(step_height)
             down_arrow = slide.shapes.add_shape(
                 MSO_SHAPE.DOWN_ARROW,
                 down_arrow_x, down_arrow_y, Cm(1.0), row_gap
             )
             down_arrow.fill.solid()
-            down_arrow.fill.fore_color.rgb = LGColors.CHARCOAL
+            down_arrow.fill.fore_color.rgb = self.colors.RED
             down_arrow.line.fill.background()
 
             # --- Row 2: left to right ---
-            y_pos2 = int(y_pos) + int(step_height) + int(row_gap)
+            y_pos2 = y_pos + int(step_height) + int(row_gap)
             for i in range(row2_count):
                 step = steps[row1_count + i]
                 box_x = int(x_start) + i * (step_width + int(arrow_width))
@@ -1935,13 +3090,13 @@ class LGPresentation:
                 header = self.add_box(
                     slide, box_x, y_pos2, step_width, Cm(1.2),
                     text=step.get("title", ""),
-                    bg_color=LGColors.CHARCOAL, text_color=LGColors.WHITE,
-                    font_size=LGTypography.BODY, bold=True
+                    bg_color=self.colors.DARK_RED, text_color=self.colors.WHITE,
+                    font_size=LGTypography.BODY, bold=True, rounded=True
                 )
                 content = self.add_box(
                     slide, box_x, y_pos2 + int(Cm(1.2)),
                     step_width, step_height - Cm(1.2),
-                    bg_color=LGColors.LIGHT_GRAY
+                    bg_color=self.colors.WHITE, rounded=True
                 )
 
                 items = step.get("items", [])
@@ -1967,7 +3122,7 @@ class LGPresentation:
                         run = p.add_run()
                         run.text = item
                         self._set_font(run, size=LGTypography.BODY_SMALL,
-                                      color=LGColors.BLACK)
+                                      color=self.colors.BLACK)
 
                 if i < row2_count - 1:
                     arrow_x = box_x + step_width
@@ -1977,7 +3132,7 @@ class LGPresentation:
                         arrow_x, arrow_y, arrow_width, Cm(1.0)
                     )
                     arrow.fill.solid()
-                    arrow.fill.fore_color.rgb = LGColors.CHARCOAL
+                    arrow.fill.fore_color.rgb = self.colors.RED
                     arrow.line.fill.background()
 
         else:
@@ -1991,16 +3146,15 @@ class LGPresentation:
                 box_x = int(x) + i * (step_width + int(arrow_width))
 
                 header = self.add_box(
-                    slide, box_x, int(y_pos), step_width, Cm(1.5),
+                    slide, box_x, y_pos, step_width, Cm(1.5),
                     text=step.get("title", ""),
-                    bg_color=LGColors.CHARCOAL, text_color=LGColors.WHITE,
-                    font_size=LGTypography.BODY, bold=True
+                    bg_color=self.colors.DARK_RED, text_color=self.colors.WHITE,
+                    font_size=LGTypography.BODY, bold=True, rounded=True
                 )
-
                 content = self.add_box(
-                    slide, box_x, int(y_pos) + int(Cm(1.5)),
+                    slide, box_x, y_pos + int(Cm(1.5)),
                     step_width, step_height - Cm(1.5),
-                    bg_color=LGColors.LIGHT_GRAY
+                    bg_color=self.colors.WHITE, rounded=True
                 )
 
                 items = step.get("items", [])
@@ -2009,7 +3163,7 @@ class LGPresentation:
                     items = [line.strip() for line in desc.split("\n") if line.strip()]
                 if items:
                     items_box = slide.shapes.add_textbox(
-                        box_x + Cm(0.3), int(y_pos) + int(Cm(2.2)),
+                        box_x + Cm(0.3), y_pos + int(Cm(2.2)),
                         step_width - Cm(0.6), step_height - Cm(3.0)
                     )
                     tf = items_box.text_frame
@@ -2027,23 +3181,23 @@ class LGPresentation:
                         run = p.add_run()
                         run.text = item
                         self._set_font(run, size=LGTypography.BODY_SMALL,
-                                      color=LGColors.BLACK)
+                                      color=self.colors.BLACK)
 
                 if i < num - 1:
                     arrow_x = box_x + step_width
-                    arrow_y = int(y_pos) + int(step_height) // 2 - int(Cm(0.5))
+                    arrow_y = y_pos + int(step_height) // 2 - int(Cm(0.5))
                     arrow = slide.shapes.add_shape(
                         MSO_SHAPE.RIGHT_ARROW,
                         arrow_x, arrow_y, arrow_width, Cm(1.0)
                     )
                     arrow.fill.solid()
-                    arrow.fill.fore_color.rgb = LGColors.CHARCOAL
+                    arrow.fill.fore_color.rgb = self.colors.RED
                     arrow.line.fill.background()
 
         return slide
 
     def add_swot(self, title, section="", strengths=None, weaknesses=None,
-                 opportunities=None, threats=None, subtitle=""):
+                 opportunities=None, threats=None, subtitle="", chapter=""):
         """
         Add a SWOT analysis slide — 2x2 grid with color-coded quadrants.
 
@@ -2055,51 +3209,43 @@ class LGPresentation:
             opportunities: List of opportunity strings
             threats: List of threat strings
             subtitle: Optional subtitle
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(2.2)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), Cm(1.8), Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE, color=LGColors.DARK_GRAY,
-                weight="semibold"
-            )
-            y_pos = Cm(2.8)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         gap = Cm(0.3)
         quad_w = (sw - int(Cm(3.0)) - int(gap)) // 2
-        quad_h = (int(LGDimensions.SLIDE_HEIGHT) - int(y_pos) - int(Cm(0.5)) - int(gap)) // 2
+        quad_h = (int(LGDimensions.SLIDE_HEIGHT) - y_pos - int(Cm(0.5)) - int(gap)) // 2
         left_x = Cm(1.5)
         right_x = int(left_x) + quad_w + int(gap)
-        top_y = int(y_pos)
+        top_y = y_pos
         bottom_y = top_y + quad_h + int(gap)
 
         quadrants = [
-            ("Strengths (강점)", strengths or [], left_x, top_y, LGColors.RED),
-            ("Weaknesses (약점)", weaknesses or [], right_x, top_y, LGColors.CHARCOAL),
-            ("Opportunities (기회)", opportunities or [], left_x, bottom_y, LGColors.GREEN),
-            ("Threats (위협)", threats or [], right_x, bottom_y, LGColors.ORANGE),
+            ("Strengths (강점)", strengths or [], left_x, top_y, self.colors.RED),
+            ("Weaknesses (약점)", weaknesses or [], right_x, top_y, self.colors.CHARCOAL),
+            ("Opportunities (기회)", opportunities or [], left_x, bottom_y, self.colors.GREEN),
+            ("Threats (위협)", threats or [], right_x, bottom_y, self.colors.ORANGE),
         ]
 
         for q_title, items, qx, qy, color in quadrants:
-            # Header bar
+            # Header bar (rounded)
             self.add_box(
                 slide, qx, qy, quad_w, Cm(1.3),
-                text=q_title, bg_color=color, text_color=LGColors.WHITE,
-                font_size=LGTypography.BODY, bold=True
+                text=q_title, bg_color=color, text_color=self.colors.WHITE,
+                font_size=LGTypography.BODY, bold=True, rounded=True
             )
 
-            # Content area
-            self.add_box(
+            # Content area (WHITE rounded)
+            content_box = self.add_box(
                 slide, qx, qy + int(Cm(1.3)), quad_w, quad_h - int(Cm(1.3)),
-                bg_color=LGColors.LIGHT_GRAY
+                bg_color=self.colors.WHITE, rounded=True
             )
 
             # Items
@@ -2123,7 +3269,7 @@ class LGPresentation:
                     run = p.add_run()
                     run.text = item
                     self._set_font(run, size=LGTypography.BODY_SMALL,
-                                  color=LGColors.BLACK)
+                                  color=self.colors.BLACK)
 
         return slide
 
@@ -2134,28 +3280,48 @@ class LGPresentation:
     def add_box(self, slide, left, top, width, height, text="",
                 bg_color=None, text_color=None, font_size=None,
                 bold=False, alignment=None, border_color=None,
-                shadow=True):
+                shadow=True, rounded=True, shadow_type="card"):
         """
-        Add a styled content box to a slide with optional drop shadow.
-        Useful for building custom diagram/architecture slides.
+        Add a styled content box to a slide with template-matching shadow.
 
         Args:
-            shadow: Whether to add a subtle drop shadow (default True).
-                    Set to False for flat elements like dividers.
+            shadow: Whether to add shadow (default True).
+            rounded: Whether to use rounded rectangle (default True).
+            shadow_type: "card" (ambient), "icon", "content" (directional).
 
         Returns the shape object.
         """
+        shape_type = MSO_SHAPE.ROUNDED_RECTANGLE if rounded else MSO_SHAPE.RECTANGLE
         box = slide.shapes.add_shape(
-            MSO_SHAPE.RECTANGLE,
+            shape_type,
             left, top, width, height
         )
         box.fill.solid()
-        box.fill.fore_color.rgb = bg_color or LGColors.LIGHT_GRAY
+        box.fill.fore_color.rgb = bg_color or self.colors.WHITE
+
+        # Border: explicit color if given, otherwise transparent (shadow provides depth)
         if border_color:
             box.line.color.rgb = border_color
             box.line.width = Pt(1)
         else:
             box.line.fill.background()
+
+        # Set corner radius for rounded rects (template uses ~4526-14523)
+        if rounded:
+            spPr = box._element.spPr
+            prstGeom = spPr.find(qn('a:prstGeom'))
+            if prstGeom is not None:
+                avLst = prstGeom.find(qn('a:avLst'))
+                if avLst is None:
+                    avLst = _make_oxml_element('a:avLst')
+                    prstGeom.append(avLst)
+                # Clear existing
+                for gd in avLst.findall(qn('a:gd')):
+                    avLst.remove(gd)
+                gd = _make_oxml_element('a:gd')
+                gd.set('name', 'adj')
+                gd.set('fmla', 'val 8000')
+                avLst.append(gd)
 
         if text:
             tf = box.text_frame
@@ -2174,76 +3340,69 @@ class LGPresentation:
             self._set_font(run,
                           size=font_size or LGTypography.BODY,
                           bold=bold,
-                          color=text_color or LGColors.BLACK)
+                          color=text_color or self.colors.BLACK)
 
-        # Add shadow for visual depth (matching LG sample style)
+        # Add shadow for visual depth (matching L-Style template)
         if shadow:
-            self._add_shadow(box)
+            self._add_shadow(box, shadow_type=shadow_type)
 
         return box
 
     def add_label_badge(self, slide, left, top, text, width=None,
                         bg_color=None, text_color=None):
         """
-        Add a small label badge (category tag).
-        e.g., red background with white text for section labels.
+        Add a small label badge (category tag) using rounded rectangle.
+        e.g., DARK_RED background with white text for section labels.
         """
         w = width or Cm(4)
         badge = self.add_box(
             slide, left, top, w, Cm(0.8),
             text=text,
-            bg_color=bg_color or LGColors.RED,
-            text_color=text_color or LGColors.WHITE,
+            bg_color=bg_color or self.colors.DARK_RED,
+            text_color=text_color or self.colors.WHITE,
             font_size=Pt(9),
             bold=True,
-            alignment=PP_ALIGN.CENTER
+            alignment=PP_ALIGN.CENTER,
+            rounded=True
         )
         return badge
 
     # ─────────────────────────────────────────
-    # Advanced Templates (전략보고서/사업계획서)
+    # Advanced Templates
     # ─────────────────────────────────────────
 
     def add_architecture(self, title, section="", subtitle="",
-                         columns=None, rows=None):
+                         columns=None, rows=None, chapter=""):
         """
         Add a multi-column architecture/system diagram slide — complex grid
         layout with header row, row groups, and area descriptions.
-
-        Designed for system architecture overviews like the GTM Assistant
-        structure or similar multi-layer diagrams seen in strategy decks.
 
         Args:
             title: Slide title
             section: Section name for top-right
             subtitle: Description text (can be multi-line)
-            columns: List of column header strings,
-                     e.g. ["MCP Server", "주요 MCP Tool", "Sources/API", "Area"]
+            columns: List of column header strings
             rows: List of row dicts:
                 [
                     {
-                        "label": "Process User Input",  # left label
-                        "cells": [
-                            "제품/서비스정보 Read\\nInput Validation",
-                            "",  # empty = skip
-                            "Percept\\nAgentic AI가 목표 달성을 위해\\n제품/서비스 정보를 인식하고 이해하는 영역"
-                        ],
-                        "highlight": False  # optional: highlight this row group
+                        "label": "Process User Input",
+                        "cells": ["셀1", "셀2", ...],
+                        "highlight": False
                     },
                     ...
                 ]
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle="", chapter=chapter)
+        y_pos = int(y_pos)
 
-        y_pos = Cm(1.8)
         if subtitle:
-            # Support multi-line subtitle
+            # Support multi-line subtitle below chrome
             sub_box = slide.shapes.add_textbox(
                 Cm(1.5), y_pos, Cm(31), Cm(1.5)
             )
@@ -2256,10 +3415,8 @@ class LGPresentation:
                 run = p.add_run()
                 run.text = line
                 self._set_font(run, size=LGTypography.SUBTITLE,
-                              color=LGColors.DARK_GRAY, weight="semibold")
-            y_pos += Cm(1.8)
-        else:
-            y_pos = Cm(2.2)
+                              color=self.colors.DARK_GRAY, weight="semibold")
+            y_pos += int(Cm(1.8))
 
         columns = columns or []
         rows = rows or []
@@ -2280,13 +3437,14 @@ class LGPresentation:
         x = int(grid_left)
         for ci, col_name in enumerate(columns):
             w = first_col_w if ci == 0 else col_w
-            self.add_box(slide, x, int(y_pos), w, int(header_h),
+            self.add_box(slide, x, y_pos, w, int(header_h),
                         text=col_name,
-                        bg_color=LGColors.CHARCOAL,
-                        text_color=LGColors.WHITE,
-                        font_size=Pt(10), bold=True, shadow=False)
+                        bg_color=self.colors.CHARCOAL,
+                        text_color=self.colors.WHITE,
+                        font_size=Pt(10), bold=True, shadow=False,
+                        rounded=False)
             x += w
-        y_pos += Cm(1.1)
+        y_pos += int(Cm(1.1))
 
         # Content rows
         for row in rows:
@@ -2308,12 +3466,13 @@ class LGPresentation:
 
             x = int(grid_left)
             # First column: label
-            label_bg = LGColors.RED if highlight else LGColors.LIGHT_GRAY
-            label_tc = LGColors.WHITE if highlight else LGColors.BLACK
-            self.add_box(slide, x, int(y_pos), first_col_w, row_h,
+            label_bg = self.colors.RED if highlight else self.colors.LIGHT_GRAY
+            label_tc = self.colors.WHITE if highlight else self.colors.BLACK
+            self.add_box(slide, x, y_pos, first_col_w, row_h,
                         text=label,
                         bg_color=label_bg, text_color=label_tc,
-                        font_size=Pt(9), bold=True, shadow=False)
+                        font_size=Pt(9), bold=True, shadow=False,
+                        rounded=False)
             x += first_col_w
 
             # Remaining columns
@@ -2322,12 +3481,12 @@ class LGPresentation:
                 if cell_text:
                     # Create box with multi-line text
                     box = slide.shapes.add_shape(
-                        MSO_SHAPE.RECTANGLE,
-                        x, int(y_pos), w, row_h
+                        MSO_SHAPE.ROUNDED_RECTANGLE,
+                        x, y_pos, w, row_h
                     )
                     box.fill.solid()
-                    box.fill.fore_color.rgb = LGColors.LIGHT_GRAY
-                    box.line.color.rgb = LGColors.BORDER_GRAY
+                    box.fill.fore_color.rgb = self.colors.WHITE
+                    box.line.color.rgb = self.colors.BORDER_GRAY
                     box.line.width = Pt(0.5)
 
                     tf = box.text_frame
@@ -2344,29 +3503,28 @@ class LGPresentation:
                         is_bold = (li == 0 and cell_text.count('\n') > 0)
                         self._set_font(run, size=Pt(9),
                                       bold=is_bold,
-                                      color=LGColors.BLACK)
+                                      color=self.colors.BLACK)
 
                 else:
                     # Empty cell - light border only
                     box = slide.shapes.add_shape(
-                        MSO_SHAPE.RECTANGLE,
-                        x, int(y_pos), w, row_h
+                        MSO_SHAPE.ROUNDED_RECTANGLE,
+                        x, y_pos, w, row_h
                     )
                     box.fill.background()
-                    box.line.color.rgb = LGColors.BORDER_GRAY
+                    box.line.color.rgb = self.colors.BORDER_GRAY
                     box.line.width = Pt(0.5)
                 x += w
 
-            y_pos += row_h + Cm(0.1)
+            y_pos += row_h + int(Cm(0.1))
 
         return slide
 
     def add_strategy_pillars(self, title, section="", subtitle="",
-                             pillars=None):
+                             pillars=None, chapter=""):
         """
         Add a strategy pillars slide — 3 to 5 vertical columns showing
-        strategic focus areas, commonly used for strategic direction,
-        capability frameworks, or organizational pillars.
+        strategic focus areas.
 
         Args:
             title: Slide title
@@ -2376,30 +3534,20 @@ class LGPresentation:
                 [
                     {
                         "header": "디지털 전환",
-                        "header_color": "#A50034",  # optional, default LG RED
+                        "header_color": "#A50034",
                         "items": ["AI/ML 기반 공정 최적화", "디지털 트윈 구축", ...]
                     },
                     ...
                 ]
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         pillars = pillars or []
         if not pillars:
@@ -2410,7 +3558,7 @@ class LGPresentation:
         total_w = sw - int(Cm(2.0))
         pillar_w = (total_w - int(gap) * (num - 1)) // num
         header_h = Cm(1.2)
-        body_h = int(LGDimensions.SLIDE_HEIGHT) - int(y_pos) - int(header_h) - int(Cm(0.5))
+        body_h = int(LGDimensions.SLIDE_HEIGHT) - y_pos - int(header_h) - int(Cm(0.5))
 
         x = Cm(1.5)
         for pillar in pillars:
@@ -2425,22 +3573,24 @@ class LGPresentation:
                     int(hdr_color_hex[5:7], 16)
                 )
             else:
-                hdr_color = LGColors.CHARCOAL
+                hdr_color = self.colors.CHARCOAL
 
-            # Header
-            self.add_box(slide, int(x), int(y_pos), pillar_w, int(header_h),
+            # Header (rounded)
+            self.add_box(slide, int(x), y_pos, pillar_w, int(header_h),
                         text=header, bg_color=hdr_color,
-                        text_color=LGColors.WHITE,
-                        font_size=Pt(14), bold=True, shadow=False)
+                        text_color=self.colors.WHITE,
+                        font_size=Pt(14), bold=True, shadow=False,
+                        rounded=True)
 
-            # Body
+            # Body (WHITE rounded)
             body_box = slide.shapes.add_shape(
-                MSO_SHAPE.RECTANGLE,
-                int(x), int(y_pos) + int(header_h), pillar_w, body_h
+                MSO_SHAPE.ROUNDED_RECTANGLE,
+                int(x), y_pos + int(header_h), pillar_w, body_h
             )
             body_box.fill.solid()
-            body_box.fill.fore_color.rgb = LGColors.LIGHT_GRAY
-            body_box.line.fill.background()
+            body_box.fill.fore_color.rgb = self.colors.WHITE
+            body_box.line.color.rgb = self.colors.BORDER_GRAY
+            body_box.line.width = Pt(0.5)
 
             tf = body_box.text_frame
             tf.clear()
@@ -2464,7 +3614,7 @@ class LGPresentation:
                 run = p.add_run()
                 run.text = item
                 self._set_font(run, size=LGTypography.BODY,
-                              color=LGColors.BLACK)
+                              color=self.colors.BLACK)
 
             self._add_shadow(body_box)
             x = int(x) + pillar_w + int(gap)
@@ -2473,10 +3623,10 @@ class LGPresentation:
 
     def add_risk_matrix(self, title, section="", subtitle="",
                         risks=None, x_label="영향도 (Impact)",
-                        y_label="발생 가능성 (Likelihood)"):
+                        y_label="발생 가능성 (Likelihood)", chapter=""):
         """
         Add a risk assessment matrix slide — 3x3 grid with color-coded risk
-        levels, commonly used in strategic planning and project risk analysis.
+        levels.
 
         Args:
             title: Slide title
@@ -2486,37 +3636,26 @@ class LGPresentation:
                 [
                     {"name": "데이터 유출", "likelihood": 2, "impact": 3},
                     {"name": "인력 이탈", "likelihood": 1, "impact": 2},
-                    ...
                 ]
                 where likelihood and impact are 1 (Low), 2 (Medium), 3 (High)
             x_label: Label for the X axis (impact)
             y_label: Label for the Y axis (likelihood)
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         risks = risks or []
 
         # Grid layout
         grid_left = Cm(4.5)
-        grid_top = int(y_pos) + int(Cm(0.5))
+        grid_top = y_pos + int(Cm(0.5))
         cell_size = Cm(4.0)
         grid_gap = Cm(0.15)
 
@@ -2536,7 +3675,7 @@ class LGPresentation:
         # Y axis label
         self._add_textbox(
             slide, Cm(1.5), grid_top, Cm(2.5), int(cell_size) * 3 + int(grid_gap) * 2,
-            text=y_label, size=Pt(10), bold=True, color=LGColors.DARK_GRAY
+            text=y_label, size=Pt(10), bold=True, color=self.colors.DARK_GRAY
         )
 
         # Y axis level labels
@@ -2545,7 +3684,7 @@ class LGPresentation:
             cy = grid_top + r * (int(cell_size) + int(grid_gap))
             self._add_textbox(
                 slide, Cm(2.8), cy, Cm(1.5), int(cell_size),
-                text=y_levels[r], size=Pt(9), color=LGColors.MEDIUM_GRAY,
+                text=y_levels[r], size=Pt(9), color=self.colors.MEDIUM_GRAY,
                 vertical=MSO_ANCHOR.MIDDLE
             )
 
@@ -2553,7 +3692,7 @@ class LGPresentation:
         self._add_textbox(
             slide, int(grid_left), grid_top + 3 * (int(cell_size) + int(grid_gap)) + int(Cm(0.3)),
             int(cell_size) * 3 + int(grid_gap) * 2, Cm(1.0),
-            text=x_label, size=Pt(10), bold=True, color=LGColors.DARK_GRAY,
+            text=x_label, size=Pt(10), bold=True, color=self.colors.DARK_GRAY,
             alignment=PP_ALIGN.CENTER
         )
 
@@ -2565,7 +3704,7 @@ class LGPresentation:
                 slide, cx,
                 grid_top + 3 * (int(cell_size) + int(grid_gap)),
                 int(cell_size), Cm(0.8),
-                text=x_levels[c], size=Pt(9), color=LGColors.MEDIUM_GRAY,
+                text=x_levels[c], size=Pt(9), color=self.colors.MEDIUM_GRAY,
                 alignment=PP_ALIGN.CENTER
             )
 
@@ -2577,7 +3716,7 @@ class LGPresentation:
                 cell_color = colors_3x3[r][c]
 
                 box = slide.shapes.add_shape(
-                    MSO_SHAPE.RECTANGLE, cx, cy, int(cell_size), int(cell_size)
+                    MSO_SHAPE.ROUNDED_RECTANGLE, cx, cy, int(cell_size), int(cell_size)
                 )
                 box.fill.solid()
                 box.fill.fore_color.rgb = cell_color
@@ -2592,7 +3731,7 @@ class LGPresentation:
                 p.alignment = PP_ALIGN.RIGHT
                 run = p.add_run()
                 run.text = labels_3x3[r][c]
-                self._set_font(run, size=Pt(8), color=LGColors.WHITE)
+                self._set_font(run, size=Pt(8), color=self.colors.WHITE)
 
         # Place risk items
         for risk in risks:
@@ -2609,10 +3748,10 @@ class LGPresentation:
             self.add_box(
                 slide, cx, cy,
                 int(cell_size) - int(Cm(0.6)), Cm(1.0),
-                text=name, bg_color=LGColors.WHITE,
-                text_color=LGColors.BLACK,
+                text=name, bg_color=self.colors.WHITE,
+                text_color=self.colors.BLACK,
                 font_size=Pt(8), bold=True,
-                shadow=True
+                shadow=True, rounded=True
             )
 
         # Legend on the right side
@@ -2620,12 +3759,12 @@ class LGPresentation:
         legend_y = grid_top
         self._add_textbox(
             slide, legend_x, legend_y, Cm(5), Cm(0.8),
-            text="위험 수준", size=Pt(10), bold=True, color=LGColors.BLACK
+            text="위험 수준", size=Pt(10), bold=True, color=self.colors.BLACK
         )
         legend_items = [
-            (LGColors.RED, "높음 (High Risk)"),
+            (self.colors.RED, "높음 (High Risk)"),
             (RGBColor(0xD4, 0x76, 0x0A), "중간 (Medium Risk)"),
-            (LGColors.GREEN, "낮음 (Low Risk)"),
+            (self.colors.GREEN, "낮음 (Low Risk)"),
         ]
         for li, (color, label) in enumerate(legend_items):
             ly = legend_y + int(Cm(1.0)) + li * int(Cm(1.0))
@@ -2639,13 +3778,14 @@ class LGPresentation:
             # Label
             self._add_textbox(
                 slide, legend_x + int(Cm(1.0)), ly, Cm(5), Cm(0.6),
-                text=label, size=Pt(9), color=LGColors.BLACK
+                text=label, size=Pt(9), color=self.colors.BLACK
             )
 
         return slide
 
     def add_financial_summary(self, title, section="", subtitle="",
-                              categories=None, total_label="합계"):
+                              categories=None, total_label="합계",
+                              chapter=""):
         """
         Add a financial/budget summary slide — structured table with
         category groups, subtotals and a grand total row.
@@ -2654,38 +3794,17 @@ class LGPresentation:
             title: Slide title
             section: Section name
             subtitle: Description text
-            categories: List of category dicts:
-                [
-                    {
-                        "name": "인건비",
-                        "items": [
-                            {"name": "개발인력", "2025": "5.0", "2026": "8.0", "2027": "10.0"},
-                            {"name": "운영인력", "2025": "2.0", "2026": "3.0", "2027": "4.0"},
-                        ],
-                        "subtotal": {"2025": "7.0", "2026": "11.0", "2027": "14.0"}
-                    },
-                    ...
-                ]
+            categories: List of category dicts (see original docstring)
             total_label: Label for grand total row
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         categories = categories or []
         if not categories:
@@ -2719,7 +3838,7 @@ class LGPresentation:
 
         table_shape = slide.shapes.add_table(
             total_rows, num_cols,
-            int(table_left), int(y_pos),
+            int(table_left), y_pos,
             exact_width, int(row_h) * total_rows
         )
         table = table_shape.table
@@ -2760,13 +3879,13 @@ class LGPresentation:
                 if ii == 0:
                     self._format_table_cell(
                         table.cell(row_idx, 0), text=cat_name,
-                        bold=True, bg_color=LGColors.LIGHT_GRAY,
+                        bold=True, bg_color=self.colors.LIGHT_GRAY,
                         alignment=PP_ALIGN.CENTER
                     )
                 else:
                     self._format_table_cell(
                         table.cell(row_idx, 0), text="",
-                        bg_color=LGColors.LIGHT_GRAY
+                        bg_color=self.colors.LIGHT_GRAY
                     )
 
                 # Item name
@@ -2812,11 +3931,11 @@ class LGPresentation:
         # Grand total row
         self._format_table_cell(
             table.cell(row_idx, 0), text="",
-            is_header=True, bg_color=LGColors.CHARCOAL
+            is_header=True, bg_color=self.colors.CHARCOAL
         )
         self._format_table_cell(
             table.cell(row_idx, 1), text=total_label,
-            is_header=True, bg_color=LGColors.CHARCOAL,
+            is_header=True, bg_color=self.colors.CHARCOAL,
             alignment=PP_ALIGN.CENTER
         )
         # Sum subtotals for grand total
@@ -2831,7 +3950,7 @@ class LGPresentation:
             self._format_table_cell(
                 table.cell(row_idx, 2 + yi),
                 text=f"{grand:.1f}",
-                is_header=True, bg_color=LGColors.CHARCOAL,
+                is_header=True, bg_color=self.colors.CHARCOAL,
                 alignment=PP_ALIGN.RIGHT
             )
         for ci in range(num_cols):
@@ -2844,49 +3963,25 @@ class LGPresentation:
         return slide
 
     def add_milestone_tracker(self, title, section="", subtitle="",
-                              phases=None):
+                              phases=None, chapter=""):
         """
         Add a milestone/progress tracker slide — horizontal chevron phases
-        with detailed milestones underneath, useful for project status or
-        implementation plans.
+        with detailed milestones underneath.
 
         Args:
             title: Slide title
             section: Section name
             subtitle: Description text
-            phases: List of phase dicts:
-                [
-                    {
-                        "name": "Phase 1: 준비",
-                        "period": "2025.Q1-Q2",
-                        "status": "completed",  # "completed", "in_progress", "planned"
-                        "milestones": [
-                            "요구사항 분석 완료",
-                            "인프라 구축",
-                            "파일럿 개발",
-                        ]
-                    },
-                    ...
-                ]
+            phases: List of phase dicts (see original docstring)
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         phases = phases or []
         if not phases:
@@ -2898,27 +3993,28 @@ class LGPresentation:
         phase_w = (total_w - int(gap) * (num - 1)) // num
         chevron_h = Cm(1.5)
         status_colors = {
-            "completed": LGColors.CHARCOAL,
-            "in_progress": LGColors.RED,
-            "planned": LGColors.MEDIUM_GRAY,
+            "completed": self.colors.CHARCOAL,
+            "in_progress": self.colors.RED,
+            "planned": self.colors.MEDIUM_GRAY,
         }
 
         # Phase chevrons
         x = Cm(1.5)
         for pi, phase in enumerate(phases):
             status = phase.get("status", "planned")
-            bg = status_colors.get(status, LGColors.MEDIUM_GRAY)
+            bg = status_colors.get(status, self.colors.MEDIUM_GRAY)
 
-            # Chevron header
+            # Chevron header (rounded)
             chevron = self.add_box(
-                slide, int(x), int(y_pos), phase_w, int(chevron_h),
+                slide, int(x), y_pos, phase_w, int(chevron_h),
                 text=phase.get("name", ""),
-                bg_color=bg, text_color=LGColors.WHITE,
-                font_size=Pt(10), bold=True, shadow=False
+                bg_color=bg, text_color=self.colors.WHITE,
+                font_size=Pt(10), bold=True, shadow=False,
+                rounded=True
             )
 
             # Period label below chevron
-            period_y = int(y_pos) + int(chevron_h) + int(Cm(0.1))
+            period_y = y_pos + int(chevron_h) + int(Cm(0.1))
             self._add_textbox(
                 slide, int(x), period_y, phase_w, Cm(0.6),
                 text=phase.get("period", ""),
@@ -2931,31 +4027,34 @@ class LGPresentation:
             status_text = {"completed": "완료", "in_progress": "진행중",
                           "planned": "예정"}.get(status, "")
             status_badge_bg = {
-                "completed": LGColors.GREEN,
-                "in_progress": LGColors.RED,
-                "planned": LGColors.BORDER_GRAY,
-            }.get(status, LGColors.BORDER_GRAY)
+                "completed": self.colors.GREEN,
+                "in_progress": self.colors.RED,
+                "planned": self.colors.BORDER_GRAY,
+            }.get(status, self.colors.BORDER_GRAY)
             self.add_box(
                 slide, int(x) + phase_w // 4, badge_y,
                 phase_w // 2, Cm(0.5),
                 text=status_text, bg_color=status_badge_bg,
-                text_color=LGColors.WHITE,
-                font_size=Pt(8), bold=True, shadow=False
+                text_color=self.colors.WHITE,
+                font_size=Pt(8), bold=True, shadow=False,
+                rounded=True
             )
 
-            # Milestones below
+            # Milestones below (WHITE rounded box)
             milestones_y = badge_y + int(Cm(0.8))
             milestones = phase.get("milestones", [])
             if milestones:
-                ms_box = slide.shapes.add_textbox(
+                ms_box = slide.shapes.add_shape(
+                    MSO_SHAPE.ROUNDED_RECTANGLE,
                     int(x), milestones_y, phase_w,
                     int(LGDimensions.SLIDE_HEIGHT) - milestones_y - int(Cm(1.0))
                 )
                 tf = ms_box.text_frame
                 tf.word_wrap = True
                 ms_box.fill.solid()
-                ms_box.fill.fore_color.rgb = LGColors.LIGHT_GRAY
-                ms_box.line.fill.background()
+                ms_box.fill.fore_color.rgb = self.colors.WHITE
+                ms_box.line.color.rgb = self.colors.BORDER_GRAY
+                ms_box.line.width = Pt(0.5)
                 tf.margin_left = Cm(0.3)
                 tf.margin_right = Cm(0.2)
                 tf.margin_top = Cm(0.3)
@@ -2965,13 +4064,13 @@ class LGPresentation:
                     p.space_after = Pt(3)
                     pPr = p._p.get_or_add_pPr()
                     buChar = _make_oxml_element('a:buChar')
-                    buChar.set('char', '✓' if status == "completed" else '▸')
+                    buChar.set('char', '\u2713' if status == "completed" else '\u25b8')
                     pPr.append(buChar)
                     pPr.set('marL', str(int(Cm(0.5))))
                     pPr.set('indent', str(int(Cm(-0.4))))
                     run = p.add_run()
                     run.text = ms
-                    color = LGColors.BLACK if status != "planned" else LGColors.MEDIUM_GRAY
+                    color = self.colors.BLACK if status != "planned" else self.colors.MEDIUM_GRAY
                     self._set_font(run, size=Pt(10), color=color)
 
                 self._add_shadow(ms_box)
@@ -2981,50 +4080,25 @@ class LGPresentation:
         return slide
 
     def add_comparison_cards(self, title, section="", subtitle="",
-                             cards=None):
+                             cards=None, chapter=""):
         """
         Add a comparison cards slide — side-by-side cards for comparing
-        options, vendors, solutions, or before/after states. Each card
-        has a header, key metrics, and detail items.
+        options, vendors, solutions, or before/after states.
 
         Args:
             title: Slide title
             section: Section name
             subtitle: Description text
-            cards: List of card dicts (2-4 cards):
-                [
-                    {
-                        "header": "Option A",
-                        "header_color": "#3C3C3C",  # optional
-                        "highlight": True,  # optional: mark as recommended
-                        "metrics": [
-                            {"label": "비용", "value": "5억원"},
-                            {"label": "기간", "value": "6개월"},
-                        ],
-                        "pros": ["높은 확장성", "기존 시스템 호환"],
-                        "cons": ["초기 비용 높음"],
-                    },
-                    ...
-                ]
+            cards: List of card dicts (2-4 cards, see original docstring)
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         cards = cards or []
         if not cards:
@@ -3034,7 +4108,7 @@ class LGPresentation:
         gap = Cm(0.3)
         total_w = sw - int(Cm(2.0))
         card_w = (total_w - int(gap) * (num - 1)) // num
-        card_h = int(LGDimensions.SLIDE_HEIGHT) - int(y_pos) - int(Cm(0.5))
+        card_h = int(LGDimensions.SLIDE_HEIGHT) - y_pos - int(Cm(0.5))
         header_h = Cm(1.0)
 
         x = Cm(1.5)
@@ -3053,28 +4127,29 @@ class LGPresentation:
                     int(hdr_color_hex[5:7], 16)
                 )
             else:
-                hdr_bg = LGColors.RED if highlight else LGColors.CHARCOAL
+                hdr_bg = self.colors.RED if highlight else self.colors.CHARCOAL
 
-            # Header with optional "추천" badge
+            # Header with optional badge (rounded)
             hdr_text = f"★ {header} (추천)" if highlight else header
             self.add_box(
-                slide, int(x), int(y_pos), card_w, int(header_h),
+                slide, int(x), y_pos, card_w, int(header_h),
                 text=hdr_text, bg_color=hdr_bg,
-                text_color=LGColors.WHITE,
-                font_size=Pt(11), bold=True, shadow=False
+                text_color=self.colors.WHITE,
+                font_size=Pt(11), bold=True, shadow=False,
+                rounded=True
             )
 
-            # Card body
-            body_top = int(y_pos) + int(header_h)
+            # Card body (WHITE rounded)
+            body_top = y_pos + int(header_h)
             body_h = card_h - int(header_h)
-            border = LGColors.RED if highlight else LGColors.BORDER_GRAY
+            border = self.colors.RED if highlight else self.colors.BORDER_GRAY
 
             body = slide.shapes.add_shape(
-                MSO_SHAPE.RECTANGLE,
+                MSO_SHAPE.ROUNDED_RECTANGLE,
                 int(x), body_top, card_w, body_h
             )
             body.fill.solid()
-            body.fill.fore_color.rgb = LGColors.WHITE
+            body.fill.fore_color.rgb = self.colors.WHITE
             body.line.color.rgb = border
             body.line.width = Pt(1.5 if highlight else 0.75)
 
@@ -3092,10 +4167,10 @@ class LGPresentation:
                 p.space_after = Pt(2)
                 run = p.add_run()
                 run.text = f"{metric['label']}: "
-                self._set_font(run, size=Pt(10), color=LGColors.MEDIUM_GRAY)
+                self._set_font(run, size=Pt(10), color=self.colors.MEDIUM_GRAY)
                 run2 = p.add_run()
                 run2.text = metric['value']
-                self._set_font(run2, size=Pt(10), bold=True, color=LGColors.BLACK)
+                self._set_font(run2, size=Pt(10), bold=True, color=self.colors.BLACK)
 
             # Separator
             if metrics and (pros or cons):
@@ -3104,8 +4179,8 @@ class LGPresentation:
                 p.space_before = Pt(4)
                 p.space_after = Pt(4)
                 run = p.add_run()
-                run.text = "─" * 20
-                self._set_font(run, size=Pt(6), color=LGColors.BORDER_GRAY)
+                run.text = "\u2500" * 20
+                self._set_font(run, size=Pt(6), color=self.colors.BORDER_GRAY)
 
             # Pros
             if pros:
@@ -3114,14 +4189,14 @@ class LGPresentation:
                 p.space_after = Pt(2)
                 run = p.add_run()
                 run.text = "장점"
-                self._set_font(run, size=Pt(9), bold=True, color=LGColors.GREEN)
+                self._set_font(run, size=Pt(9), bold=True, color=self.colors.GREEN)
                 for item in pros:
                     p = tf.add_paragraph()
                     p.alignment = PP_ALIGN.LEFT
                     p.space_after = Pt(2)
                     run = p.add_run()
                     run.text = f"  + {item}"
-                    self._set_font(run, size=Pt(9), color=LGColors.BLACK)
+                    self._set_font(run, size=Pt(9), color=self.colors.BLACK)
 
             # Cons
             if cons:
@@ -3139,7 +4214,7 @@ class LGPresentation:
                     p.space_after = Pt(2)
                     run = p.add_run()
                     run.text = f"  - {item}"
-                    self._set_font(run, size=Pt(9), color=LGColors.BLACK)
+                    self._set_font(run, size=Pt(9), color=self.colors.BLACK)
 
             self._add_shadow(body)
             x = int(x) + card_w + int(gap)
@@ -3151,7 +4226,7 @@ class LGPresentation:
     # ─────────────────────────────────────────
 
     def add_gantt_chart(self, title, section="", subtitle="", tasks=None,
-                        start_date="", months=6):
+                        start_date="", months=6, chapter=""):
         """
         Add a Gantt chart slide showing project task timelines.
 
@@ -3159,43 +4234,22 @@ class LGPresentation:
             title: Slide title
             section: Section name for top-right
             subtitle: Optional subtitle
-            tasks: List of task dicts:
-                [
-                    {"name": "요구사항 분석", "start": 0, "duration": 2,
-                     "progress": 100, "color": "#A50034"},
-                    {"name": "설계", "start": 1, "duration": 3,
-                     "progress": 60},
-                    ...
-                ]
-                - start: month offset from start (0-based)
-                - duration: number of months
-                - progress: completion percentage (0-100)
-                - color: optional bar color hex
+            tasks: List of task dicts (see original docstring)
             start_date: Label for the start period (e.g., "2025.01")
             months: Total number of months to display (default 6)
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         tasks = tasks or []
         if not tasks:
             return slide
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
 
         # Layout dimensions
         name_col_width = Cm(6)
@@ -3211,20 +4265,20 @@ class LGPresentation:
             mx = chart_left + month_width * m
             # Header cell
             self.add_box(
-                slide, mx, int(y_pos), month_width, int(header_height),
+                slide, mx, y_pos, month_width, int(header_height),
                 text=f"M{m + 1}" if not start_date else "",
-                bg_color=LGColors.CHARCOAL, text_color=LGColors.WHITE,
-                font_size=Pt(9), bold=True, shadow=False
+                bg_color=self.colors.CHARCOAL, text_color=self.colors.WHITE,
+                font_size=Pt(9), bold=True, shadow=False, rounded=False
             )
             # Vertical grid line
             if m > 0:
                 grid_line = slide.shapes.add_shape(
                     MSO_SHAPE.RECTANGLE,
-                    mx, int(y_pos) + int(header_height),
+                    mx, y_pos + int(header_height),
                     Pt(0.5), int(row_height) * len(tasks)
                 )
                 grid_line.fill.solid()
-                grid_line.fill.fore_color.rgb = LGColors.BORDER_GRAY
+                grid_line.fill.fore_color.rgb = self.colors.BORDER_GRAY
                 grid_line.line.fill.background()
 
         # Month labels if start_date provided
@@ -3239,21 +4293,22 @@ class LGPresentation:
                 cy = base_year + (base_month - 1 + m) // 12
                 mx = chart_left + month_width * m
                 self._add_textbox(
-                    slide, mx, int(y_pos),
+                    slide, mx, y_pos,
                     month_width, int(header_height),
                     text=f"{cy}.{cm:02d}",
-                    size=Pt(8), bold=True, color=LGColors.WHITE,
+                    size=Pt(8), bold=True, color=self.colors.WHITE,
                     alignment=PP_ALIGN.CENTER
                 )
 
         # Task name header
         self.add_box(
-            slide, Cm(1.5), int(y_pos), int(name_col_width), int(header_height),
-            text="작업 항목", bg_color=LGColors.CHARCOAL,
-            text_color=LGColors.WHITE, font_size=Pt(9), bold=True, shadow=False
+            slide, Cm(1.5), y_pos, int(name_col_width), int(header_height),
+            text="작업 항목", bg_color=self.colors.CHARCOAL,
+            text_color=self.colors.WHITE, font_size=Pt(9), bold=True,
+            shadow=False, rounded=False
         )
 
-        y_pos = int(y_pos) + int(header_height)
+        y_pos = y_pos + int(header_height)
 
         # Task rows
         for ti, task in enumerate(tasks):
@@ -3267,7 +4322,7 @@ class LGPresentation:
                 tr, tg, tb = int(t_color_hex[1:3], 16), int(t_color_hex[3:5], 16), int(t_color_hex[5:7], 16)
                 bar_color = RGBColor(tr, tg, tb)
             except (ValueError, IndexError):
-                bar_color = LGColors.RED
+                bar_color = self.colors.RED
 
             row_y = y_pos + int(row_height) * ti
 
@@ -3277,14 +4332,29 @@ class LGPresentation:
                 chart_left, row_y, chart_width, int(row_height)
             )
             row_bg.fill.solid()
-            row_bg.fill.fore_color.rgb = LGColors.WHITE if ti % 2 == 0 else LGColors.LIGHT_GRAY
-            row_bg.line.fill.background()
+            row_bg.fill.fore_color.rgb = self.colors.WHITE if ti % 2 == 0 else self.colors.LIGHT_GRAY
+            row_bg.line.color.rgb = self.colors.RED
+            row_bg.line.width = Pt(1)
+            # Set corner radius (template: val 8000)
+            _spPr = row_bg._element.spPr
+            _pg = _spPr.find(qn('a:prstGeom'))
+            if _pg is not None:
+                _al = _pg.find(qn('a:avLst'))
+                if _al is None:
+                    _al = _make_oxml_element('a:avLst')
+                    _pg.append(_al)
+                for _gd in _al.findall(qn('a:gd')):
+                    _al.remove(_gd)
+                _gd = _make_oxml_element('a:gd')
+                _gd.set('name', 'adj')
+                _gd.set('fmla', 'val 8000')
+                _al.append(_gd)
 
             # Task name
             self._add_textbox(
                 slide, Cm(1.5), row_y,
                 int(name_col_width), int(row_height),
-                text=task_name, size=Pt(10), color=LGColors.BLACK,
+                text=task_name, size=Pt(10), color=self.colors.BLACK,
                 alignment=PP_ALIGN.LEFT,
                 vertical=MSO_ANCHOR.MIDDLE
             )
@@ -3295,7 +4365,7 @@ class LGPresentation:
             bar_y = row_y + (int(row_height) - int(bar_height)) // 2
 
             bg_bar = slide.shapes.add_shape(
-                MSO_SHAPE.RECTANGLE,
+                MSO_SHAPE.ROUNDED_RECTANGLE,
                 bar_x, bar_y, bar_w, int(bar_height)
             )
             bg_bar.fill.solid()
@@ -3306,7 +4376,7 @@ class LGPresentation:
             if t_progress > 0:
                 fill_w = max(int(bar_w * t_progress / 100), int(Cm(0.1)))
                 fill_bar = slide.shapes.add_shape(
-                    MSO_SHAPE.RECTANGLE,
+                    MSO_SHAPE.ROUNDED_RECTANGLE,
                     bar_x, bar_y, fill_w, int(bar_height)
                 )
                 fill_bar.fill.solid()
@@ -3319,14 +4389,15 @@ class LGPresentation:
                     slide, bar_x, bar_y,
                     bar_w, int(bar_height),
                     text=f"{t_progress}%",
-                    size=Pt(7), bold=True, color=LGColors.WHITE,
+                    size=Pt(7), bold=True, color=self.colors.WHITE,
                     alignment=PP_ALIGN.CENTER,
                     vertical=MSO_ANCHOR.MIDDLE
                 )
 
         return slide
 
-    def add_org_chart(self, title, section="", subtitle="", org_data=None):
+    def add_org_chart(self, title, section="", subtitle="", org_data=None,
+                      chapter=""):
         """
         Add an organizational chart slide with hierarchical boxes and connectors.
 
@@ -3334,48 +4405,20 @@ class LGPresentation:
             title: Slide title
             section: Section name for top-right
             subtitle: Optional subtitle
-            org_data: Dict representing the org hierarchy:
-                {
-                    "name": "CEO",
-                    "title": "대표이사",
-                    "children": [
-                        {
-                            "name": "CTO",
-                            "title": "기술본부장",
-                            "children": [
-                                {"name": "Dev Lead", "title": "개발팀장"},
-                                {"name": "QA Lead", "title": "품질팀장"},
-                            ]
-                        },
-                        {
-                            "name": "CFO",
-                            "title": "재무본부장",
-                        }
-                    ]
-                }
+            org_data: Dict representing the org hierarchy (see original docstring)
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         if not org_data:
             return slide
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
 
         # Calculate tree structure
         def count_leaves(node):
@@ -3401,7 +4444,7 @@ class LGPresentation:
         level_height = int(box_h) + int(v_gap)
 
         available_width = sw - int(Cm(2.0))
-        content_top = int(y_pos)
+        content_top = y_pos
 
         # Recursive drawing with position tracking
         def draw_node(node, level, cx, is_root=False):
@@ -3409,13 +4452,13 @@ class LGPresentation:
             ny = content_top + level * level_height
             nx = cx - int(box_w) // 2
 
-            # Box styling
-            bg = LGColors.CHARCOAL if is_root else LGColors.LIGHT_GRAY
-            tc = LGColors.WHITE if is_root else LGColors.BLACK
+            # Box styling (rounded)
+            bg = self.colors.CHARCOAL if is_root else self.colors.WHITE
+            tc = self.colors.WHITE if is_root else self.colors.BLACK
 
             box = self.add_box(
                 slide, nx, ny, int(box_w), int(box_h),
-                bg_color=bg, shadow=True
+                bg_color=bg, shadow=True, rounded=True
             )
 
             # Name (bold)
@@ -3447,7 +4490,7 @@ class LGPresentation:
                 p.alignment = PP_ALIGN.CENTER
                 run = p.add_run()
                 run.text = node_title
-                self._set_font(run, size=Pt(8), color=tc if is_root else LGColors.MEDIUM_GRAY)
+                self._set_font(run, size=Pt(8), color=tc if is_root else self.colors.MEDIUM_GRAY)
 
             children = node.get("children", [])
             if children:
@@ -3483,7 +4526,7 @@ class LGPresentation:
                     Pt(2), mid_y - parent_bottom_y
                 )
                 v_line.fill.solid()
-                v_line.fill.fore_color.rgb = LGColors.BORDER_GRAY
+                v_line.fill.fore_color.rgb = self.colors.BORDER_GRAY
                 v_line.line.fill.background()
 
                 # Horizontal line connecting children
@@ -3496,7 +4539,7 @@ class LGPresentation:
                         h_right - h_left, Pt(2)
                     )
                     h_line.fill.solid()
-                    h_line.fill.fore_color.rgb = LGColors.BORDER_GRAY
+                    h_line.fill.fore_color.rgb = self.colors.BORDER_GRAY
                     h_line.line.fill.background()
 
                 # Vertical lines from horizontal to each child
@@ -3507,7 +4550,7 @@ class LGPresentation:
                         Pt(2), child_top_y - mid_y
                     )
                     vc_line.fill.solid()
-                    vc_line.fill.fore_color.rgb = LGColors.BORDER_GRAY
+                    vc_line.fill.fore_color.rgb = self.colors.BORDER_GRAY
                     vc_line.line.fill.background()
 
         # Draw from root centered on slide
@@ -3515,7 +4558,8 @@ class LGPresentation:
 
         return slide
 
-    def add_pyramid(self, title, section="", subtitle="", levels=None):
+    def add_pyramid(self, title, section="", subtitle="", levels=None,
+                    chapter=""):
         """
         Add a pyramid/hierarchy diagram slide with trapezoid layers.
 
@@ -3523,39 +4567,24 @@ class LGPresentation:
             title: Slide title
             section: Section name for top-right
             subtitle: Optional subtitle
-            levels: List of level dicts (top to bottom):
-                [
-                    {"label": "전략", "description": "장기 비전 및 목표"},
-                    {"label": "전술", "description": "실행 계획"},
-                    {"label": "운영", "description": "일상 업무 프로세스"},
-                ]
+            levels: List of level dicts (top to bottom, see original docstring)
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         levels = levels or []
         if not levels:
             return slide
 
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
-
         num_levels = len(levels)
-        available_height = sh - int(y_pos) - int(Cm(0.5))
+        available_height = sh - y_pos - int(Cm(0.5))
         level_height = available_height // num_levels
         gap = Cm(0.1)
 
@@ -3574,7 +4603,7 @@ class LGPresentation:
             fraction = i / max(num_levels - 1, 1)
             level_w = int(min_width) + int((int(max_width) - int(min_width)) * fraction)
             lx = center_x - level_w // 2
-            ly = int(y_pos) + level_height * i
+            ly = y_pos + level_height * i
 
             # Color: use per-level color key, or palette, or fallback
             level_color_hex = level.get("color", None)
@@ -3586,9 +4615,9 @@ class LGPresentation:
                 int(level_color_hex[5:7], 16)
             )
 
-            # Trapezoid shape (approximated with rectangle + rounded corners)
+            # Trapezoid shape (rounded rectangle)
             box = slide.shapes.add_shape(
-                MSO_SHAPE.RECTANGLE,
+                MSO_SHAPE.ROUNDED_RECTANGLE,
                 lx, ly, level_w, level_height - int(gap)
             )
             box.fill.solid()
@@ -3601,7 +4630,7 @@ class LGPresentation:
                 slide, lx, ly,
                 level_w, level_height - int(gap),
                 text=label, size=Pt(14), bold=True,
-                color=LGColors.WHITE,
+                color=self.colors.WHITE,
                 alignment=PP_ALIGN.CENTER,
                 vertical=MSO_ANCHOR.MIDDLE
             )
@@ -3617,14 +4646,14 @@ class LGPresentation:
                     desc_left - (lx + level_w), Pt(1)
                 )
                 conn.fill.solid()
-                conn.fill.fore_color.rgb = LGColors.BORDER_GRAY
+                conn.fill.fore_color.rgb = self.colors.BORDER_GRAY
                 conn.line.fill.background()
 
                 # Description text
                 self._add_textbox(
                     slide, desc_left, ly,
                     sw - desc_left - int(Cm(0.5)), level_height - int(gap),
-                    text=desc, size=Pt(10), color=LGColors.DARK_GRAY,
+                    text=desc, size=Pt(10), color=self.colors.DARK_GRAY,
                     alignment=PP_ALIGN.LEFT,
                     vertical=MSO_ANCHOR.MIDDLE
                 )
@@ -3633,7 +4662,7 @@ class LGPresentation:
 
     def add_positioning_map(self, title, section="", subtitle="",
                             x_label="", y_label="", items=None,
-                            quadrant_labels=None):
+                            quadrant_labels=None, chapter=""):
         """
         Add a 2D positioning/perceptual map slide with plotted items.
 
@@ -3643,58 +4672,36 @@ class LGPresentation:
             subtitle: Optional subtitle
             x_label: Label for X axis
             y_label: Label for Y axis
-            items: List of item dicts:
-                [
-                    {"name": "제품A", "x": 0.8, "y": 0.7,
-                     "size": "large", "color": "#A50034"},
-                    {"name": "제품B", "x": 0.3, "y": 0.4,
-                     "size": "medium"},
-                    ...
-                ]
-                - x, y: normalized position (0.0 to 1.0)
-                - size: "small", "medium", "large" (default "medium")
-                - color: optional hex color
-            quadrant_labels: Optional list of 4 labels:
-                ["고가치/고성장", "고가치/저성장",
-                 "저가치/고성장", "저가치/저성장"]
+            items: List of item dicts (see original docstring)
+            quadrant_labels: Optional list of 4 labels
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         items = items or []
 
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
-
         # Map area
         map_left = int(Cm(3.5))
-        map_top = int(y_pos) + int(Cm(0.5))
+        map_top = y_pos + int(Cm(0.5))
         map_size = min(sw - int(Cm(5.0)), sh - map_top - int(Cm(1.5)))
         map_width = map_size
         map_height = map_size
 
         # Background
         bg = slide.shapes.add_shape(
-            MSO_SHAPE.RECTANGLE,
+            MSO_SHAPE.ROUNDED_RECTANGLE,
             map_left, map_top, map_width, map_height
         )
         bg.fill.solid()
-        bg.fill.fore_color.rgb = LGColors.LIGHT_GRAY
-        bg.line.color.rgb = LGColors.BORDER_GRAY
+        bg.fill.fore_color.rgb = self.colors.LIGHT_GRAY
+        bg.line.color.rgb = self.colors.BORDER_GRAY
         bg.line.width = Pt(1)
 
         # Cross-hairs (axes through center)
@@ -3707,7 +4714,7 @@ class LGPresentation:
             mid_x - Pt(1), map_top, Pt(2), map_height
         )
         v_axis.fill.solid()
-        v_axis.fill.fore_color.rgb = LGColors.BORDER_GRAY
+        v_axis.fill.fore_color.rgb = self.colors.BORDER_GRAY
         v_axis.line.fill.background()
 
         # Horizontal axis
@@ -3716,7 +4723,7 @@ class LGPresentation:
             map_left, mid_y - Pt(1), map_width, Pt(2)
         )
         h_axis.fill.solid()
-        h_axis.fill.fore_color.rgb = LGColors.BORDER_GRAY
+        h_axis.fill.fore_color.rgb = self.colors.BORDER_GRAY
         h_axis.line.fill.background()
 
         # Axis labels
@@ -3725,14 +4732,14 @@ class LGPresentation:
                 slide, map_left, map_top + map_height + int(Cm(0.2)),
                 map_width, Cm(0.8),
                 text=x_label, size=Pt(10), bold=True,
-                color=LGColors.DARK_GRAY, alignment=PP_ALIGN.CENTER
+                color=self.colors.DARK_GRAY, alignment=PP_ALIGN.CENTER
             )
         if y_label:
             self._add_textbox(
                 slide, map_left - int(Cm(3.0)), map_top,
                 Cm(2.5), map_height,
                 text=y_label, size=Pt(10), bold=True,
-                color=LGColors.DARK_GRAY, alignment=PP_ALIGN.CENTER,
+                color=self.colors.DARK_GRAY, alignment=PP_ALIGN.CENTER,
                 vertical=MSO_ANCHOR.MIDDLE
             )
 
@@ -3750,7 +4757,7 @@ class LGPresentation:
                         slide, qx, qy,
                         map_width // 2 - int(Cm(0.6)), Cm(0.6),
                         text=quadrant_labels[qi],
-                        size=Pt(8), color=LGColors.MEDIUM_GRAY,
+                        size=Pt(8), color=self.colors.MEDIUM_GRAY,
                         alignment=PP_ALIGN.LEFT
                     )
 
@@ -3767,7 +4774,7 @@ class LGPresentation:
                 ir, ig, ib = int(i_color_hex[1:3], 16), int(i_color_hex[3:5], 16), int(i_color_hex[5:7], 16)
                 i_color = RGBColor(ir, ig, ib)
             except (ValueError, IndexError):
-                i_color = LGColors.RED
+                i_color = self.colors.RED
 
             # Convert normalized coords to map coords
             px = map_left + int(map_width * ix) - int(i_size) // 2
@@ -3798,7 +4805,7 @@ class LGPresentation:
                 slide, px, py,
                 int(i_size), int(i_size),
                 text=i_name, size=Pt(8), bold=True,
-                color=LGColors.WHITE,
+                color=self.colors.WHITE,
                 alignment=PP_ALIGN.CENTER,
                 vertical=MSO_ANCHOR.MIDDLE
             )
@@ -3806,7 +4813,7 @@ class LGPresentation:
         return slide
 
     def add_keyword_highlight(self, title, section="", subtitle="",
-                              keywords=None, description=""):
+                              keywords=None, description="", chapter=""):
         """
         Add a keyword emphasis/tag-cloud style slide.
 
@@ -3814,44 +4821,26 @@ class LGPresentation:
             title: Slide title
             section: Section name for top-right
             subtitle: Optional subtitle
-            keywords: List of keyword dicts:
-                [
-                    {"text": "AI 혁신", "size": 36, "color": "#A50034"},
-                    {"text": "디지털 전환", "size": 28},
-                    {"text": "데이터 분석", "size": 24, "color": "#2E7D32"},
-                    ...
-                ]
-                - size: font size in pt (determines visual weight)
-                - color: optional hex color (default LG RED)
+            keywords: List of keyword dicts (see original docstring)
             description: Supporting description text below keywords
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         keywords = keywords or []
         if not keywords:
             return slide
 
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
-
         # Keyword cloud area
         cloud_left = Cm(2.0)
-        cloud_top = int(y_pos) + int(Cm(0.5))
+        cloud_top = y_pos + int(Cm(0.5))
         cloud_width = sw - int(Cm(4.0))
         cloud_height = sh - cloud_top - int(Cm(3.0)) if description else sh - cloud_top - int(Cm(1.0))
 
@@ -3870,7 +4859,7 @@ class LGPresentation:
                 kr, kg, kb = int(kw_color_hex[1:3], 16), int(kw_color_hex[3:5], 16), int(kw_color_hex[5:7], 16)
                 kw_color = RGBColor(kr, kg, kb)
             except (ValueError, IndexError):
-                kw_color = LGColors.RED
+                kw_color = self.colors.RED
 
             # Estimate box size based on text length and font size
             char_width = int(Pt(kw_size)) * 0.7
@@ -3885,14 +4874,15 @@ class LGPresentation:
 
             row_height = max(row_height, box_h)
 
-            # Background box with slight opacity
+            # Background box with slight opacity (rounded)
             bg_box = slide.shapes.add_shape(
                 MSO_SHAPE.ROUNDED_RECTANGLE,
                 current_x, current_y, box_w, box_h
             )
             bg_box.fill.solid()
-            bg_box.fill.fore_color.rgb = LGColors.LIGHT_GRAY
-            bg_box.line.fill.background()
+            bg_box.fill.fore_color.rgb = self.colors.WHITE
+            bg_box.line.color.rgb = self.colors.BORDER_GRAY
+            bg_box.line.width = Pt(0.5)
 
             # Keyword text
             self._add_textbox(
@@ -3913,7 +4903,7 @@ class LGPresentation:
                 slide, Cm(2.0), desc_top,
                 sw - int(Cm(4.0)), Cm(2.0),
                 text=description, size=LGTypography.BODY,
-                color=LGColors.DARK_GRAY,
+                color=self.colors.DARK_GRAY,
                 alignment=PP_ALIGN.CENTER
             )
 
@@ -3924,7 +4914,7 @@ class LGPresentation:
     # ─────────────────────────────────────────
 
     def add_swimlane(self, title, section="", subtitle="",
-                     lanes=None, steps=None, connections=None):
+                     lanes=None, steps=None, connections=None, chapter=""):
         """
         Add a swimlane process diagram — horizontal lanes for each
         role/department/system with process steps placed in columns.
@@ -3933,49 +4923,25 @@ class LGPresentation:
             title: Slide title
             section: Section name for top-right
             subtitle: Optional subtitle
-            lanes: List of lane names (roles/departments):
-                ["고객사", "PM", "개발팀", "QA팀"]
-            steps: List of step dicts:
-                [
-                    {"lane": 0, "col": 0, "text": "요구사항 전달"},
-                    {"lane": 1, "col": 1, "text": "요구사항 분석"},
-                    {"lane": 2, "col": 2, "text": "설계/개발", "color": "#1565C0"},
-                    {"lane": 3, "col": 3, "text": "테스트"},
-                    {"lane": 1, "col": 4, "text": "검수 요청"},
-                    {"lane": 0, "col": 5, "text": "최종 승인"},
-                ]
-                - lane: index into lanes list (which row)
-                - col: column position (left to right sequence)
-                - text: step label
-                - color: optional background color hex
-            connections: List of (from_step_index, to_step_index) tuples:
-                [(0,1), (1,2), (2,3), (3,4), (4,5)]
+            lanes: List of lane names (roles/departments)
+            steps: List of step dicts (see original docstring)
+            connections: List of (from_step_index, to_step_index) tuples
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_start = int(y_pos)
 
         lanes = lanes or []
         steps = steps or []
         connections = connections or []
         if not lanes or not steps:
             return slide
-
-        y_start = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_start, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_start = Cm(2.8)
-        else:
-            y_start = Cm(2.2)
 
         num_lanes = len(lanes)
         num_cols = max((s.get("col", 0) for s in steps), default=0) + 1
@@ -3985,7 +4951,7 @@ class LGPresentation:
         grid_left = int(Cm(1.5)) + int(label_width) + int(Cm(0.2))
         grid_right_margin = Cm(1.0)
         grid_width = sw - grid_left - int(grid_right_margin)
-        available_height = sh - int(y_start) - int(Cm(0.5))
+        available_height = sh - y_start - int(Cm(0.5))
         lane_height = available_height // num_lanes
         col_width = grid_width // num_cols
 
@@ -4001,8 +4967,8 @@ class LGPresentation:
 
         # Lane label accent colors
         lane_accent_colors = [
-            LGColors.RED,
-            LGColors.CHARCOAL,
+            self.colors.RED,
+            self.colors.CHARCOAL,
             RGBColor(0x15, 0x65, 0xC0),  # Blue
             RGBColor(0x2E, 0x7D, 0x32),  # Green
             RGBColor(0xD4, 0x76, 0x0A),  # Orange
@@ -4011,7 +4977,7 @@ class LGPresentation:
 
         # Draw lanes (horizontal bands)
         for i, lane_name in enumerate(lanes):
-            ly = int(y_start) + lane_height * i
+            ly = y_start + lane_height * i
 
             # Lane background band
             band = slide.shapes.add_shape(
@@ -4023,10 +4989,10 @@ class LGPresentation:
             band.line.color.rgb = RGBColor(0xD0, 0xD0, 0xD0)
             band.line.width = Pt(0.5)
 
-            # Lane label (left side)
+            # Lane label (left side, rounded)
             accent_color = lane_accent_colors[i % len(lane_accent_colors)]
             label_box = slide.shapes.add_shape(
-                MSO_SHAPE.RECTANGLE,
+                MSO_SHAPE.ROUNDED_RECTANGLE,
                 int(Cm(1.5)), ly, int(label_width), lane_height
             )
             label_box.fill.solid()
@@ -4043,7 +5009,7 @@ class LGPresentation:
             p.alignment = PP_ALIGN.CENTER
             run = p.add_run()
             run.text = lane_name
-            self._set_font(run, size=Pt(11), bold=True, color=LGColors.WHITE)
+            self._set_font(run, size=Pt(11), bold=True, color=self.colors.WHITE)
 
             # Thin horizontal divider at bottom of lane
             if i < num_lanes - 1:
@@ -4067,7 +5033,7 @@ class LGPresentation:
 
             # Calculate position (centered in cell)
             cx = grid_left + col_width * col_idx + col_width // 2
-            cy = int(y_start) + lane_height * lane_idx + lane_height // 2
+            cy = y_start + lane_height * lane_idx + lane_height // 2
             bx = cx - step_w // 2
             by = cy - step_h // 2
 
@@ -4079,9 +5045,9 @@ class LGPresentation:
                     int(color_hex[5:7], 16)
                 )
             else:
-                box_color = LGColors.CHARCOAL
+                box_color = self.colors.CHARCOAL
 
-            # Step box
+            # Step box (rounded)
             box = slide.shapes.add_shape(
                 MSO_SHAPE.ROUNDED_RECTANGLE,
                 bx, by, step_w, step_h
@@ -4107,7 +5073,7 @@ class LGPresentation:
             p.alignment = PP_ALIGN.CENTER
             run = p.add_run()
             run.text = text
-            self._set_font(run, size=Pt(10), bold=True, color=LGColors.WHITE)
+            self._set_font(run, size=Pt(10), bold=True, color=self.colors.WHITE)
 
             step_centers[idx] = (cx, cy)
 
@@ -4144,7 +5110,7 @@ class LGPresentation:
                         int(Cm(0.4)), ah
                     )
                     arrow.fill.solid()
-                    arrow.fill.fore_color.rgb = LGColors.CHARCOAL
+                    arrow.fill.fore_color.rgb = self.colors.CHARCOAL
                     arrow.line.fill.background()
             else:
                 # Horizontal or diagonal → use right arrow
@@ -4214,17 +5180,9 @@ class LGPresentation:
     # ─────────────────────────────────────────
 
     def add_chart_slide(self, title, section="", subtitle="",
-                        chart_path=None, caption=""):
+                        chart_path=None, caption="", chapter=""):
         """
         Add a slide with a chart image (from matplotlib save or any image file).
-
-        Usage:
-            import matplotlib.pyplot as plt
-            fig, ax = plt.subplots()
-            ax.bar(['A', 'B', 'C'], [10, 20, 15])
-            fig.savefig('/tmp/chart.png', dpi=150, bbox_inches='tight')
-            plt.close()
-            prs.add_chart_slide("매출 분석", chart_path='/tmp/chart.png')
 
         Args:
             title: Slide title
@@ -4232,30 +5190,20 @@ class LGPresentation:
             subtitle: Optional subtitle
             chart_path: Path to chart image file (PNG, JPG, etc.)
             caption: Optional caption text below the chart
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
-
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         if chart_path and os.path.exists(chart_path):
             # Calculate image dimensions to fill content area
-            img_top = int(y_pos) + int(Cm(0.3))
+            img_top = y_pos + int(Cm(0.3))
             img_left = Cm(2.0)
             img_max_width = sw - int(Cm(4.0))
             img_max_height = sh - img_top - int(Cm(1.5))
@@ -4284,13 +5232,14 @@ class LGPresentation:
                 slide, Cm(2.0), cap_top,
                 sw - int(Cm(4.0)), Cm(1.0),
                 text=caption, size=LGTypography.CAPTION,
-                color=LGColors.MEDIUM_GRAY,
+                color=self.colors.MEDIUM_GRAY,
                 alignment=PP_ALIGN.CENTER
             )
 
         return slide
 
-    def add_image_slide(self, title, section="", subtitle="", images=None):
+    def add_image_slide(self, title, section="", subtitle="", images=None,
+                        chapter=""):
         """
         Add a slide with one or more images in various layouts.
 
@@ -4298,42 +5247,23 @@ class LGPresentation:
             title: Slide title
             section: Section name for top-right
             subtitle: Optional subtitle
-            images: List of image dicts:
-                [
-                    {"path": "/path/to/img.png", "width": 15, "caption": "설명"},
-                    ...
-                ]
-                - 1 image: centered, large
-                - 2 images: side by side
-                - 3+ images: grid layout
-                - width: optional width in cm
-                - caption: optional caption text
+            images: List of image dicts (see original docstring)
+            chapter: Chapter name shown top-left in red
         """
         slide = self._get_blank_slide()
         sw = int(LGDimensions.SLIDE_WIDTH)
         sh = int(LGDimensions.SLIDE_HEIGHT)
 
-        self._add_accent_bar(slide)
-        if section:
-            self._add_section_indicator(slide, section)
-        self._add_slide_title(slide, title)
+        # L-Style chrome
+        y_pos = self._add_content_chrome(slide, title=title, section=section,
+                                         subtitle=subtitle, chapter=chapter)
+        y_pos = int(y_pos)
 
         images = images or []
         if not images:
             return slide
 
-        y_pos = Cm(1.8)
-        if subtitle:
-            self._add_textbox(
-                slide, Cm(1.5), y_pos, Cm(28), Cm(1.0),
-                text=subtitle, size=LGTypography.SUBTITLE,
-                color=LGColors.DARK_GRAY, weight="semibold"
-            )
-            y_pos = Cm(2.8)
-        else:
-            y_pos = Cm(2.2)
-
-        content_top = int(y_pos) + int(Cm(0.3))
+        content_top = y_pos + int(Cm(0.3))
         content_height = sh - content_top - int(Cm(1.0))
         content_width = sw - int(Cm(3.0))
         margin_left = Cm(1.5)
@@ -4364,7 +5294,7 @@ class LGPresentation:
                         content_top + pic.height + int(Cm(0.2)),
                         content_width, Cm(0.8),
                         text=caption, size=LGTypography.CAPTION,
-                        color=LGColors.MEDIUM_GRAY,
+                        color=self.colors.MEDIUM_GRAY,
                         alignment=PP_ALIGN.CENTER
                     )
 
@@ -4393,7 +5323,7 @@ class LGPresentation:
                             content_top + pic.height + int(Cm(0.2)),
                             each_w, Cm(0.8),
                             text=caption, size=LGTypography.CAPTION,
-                            color=LGColors.MEDIUM_GRAY,
+                            color=self.colors.MEDIUM_GRAY,
                             alignment=PP_ALIGN.CENTER
                         )
 
@@ -4428,14 +5358,14 @@ class LGPresentation:
                             iy + pic.height + int(Cm(0.1)),
                             each_w, Cm(0.6),
                             text=caption, size=Pt(8),
-                            color=LGColors.MEDIUM_GRAY,
+                            color=self.colors.MEDIUM_GRAY,
                             alignment=PP_ALIGN.CENTER
                         )
 
         return slide
 
     def add_matplotlib_chart(self, title, section="", subtitle="",
-                             fig=None, caption=""):
+                             fig=None, caption="", chapter=""):
         """
         Add a matplotlib figure directly to a slide (saves to temp file internally).
 
@@ -4445,16 +5375,11 @@ class LGPresentation:
             subtitle: Optional subtitle
             fig: matplotlib Figure object
             caption: Optional caption text below the chart
-
-        Usage:
-            import matplotlib.pyplot as plt
-            fig, ax = plt.subplots(figsize=(10, 6))
-            ax.bar(['A', 'B', 'C'], [10, 20, 15])
-            prs.add_matplotlib_chart("분석 결과", fig=fig)
-            plt.close(fig)
+            chapter: Chapter name shown top-left in red
         """
         if fig is None:
-            return self.add_chart_slide(title, section, subtitle, None, caption)
+            return self.add_chart_slide(title, section, subtitle, None, caption,
+                                        chapter=chapter)
 
         import tempfile
         tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
@@ -4465,7 +5390,7 @@ class LGPresentation:
             fig.savefig(tmp_path, dpi=150, bbox_inches='tight',
                         facecolor='white', edgecolor='none')
             slide = self.add_chart_slide(title, section, subtitle,
-                                         tmp_path, caption)
+                                         tmp_path, caption, chapter=chapter)
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
@@ -4473,6 +5398,11 @@ class LGPresentation:
         return slide
 
     def save(self, filename):
-        """Save the presentation to a file."""
+        """
+        Save the presentation to a file.
+
+        Args:
+            filename: Output file path.
+        """
         self.prs.save(filename)
         return filename
